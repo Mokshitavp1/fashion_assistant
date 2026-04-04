@@ -1,0 +1,50 @@
+{
+  "config": {
+    "max_concurrent_image_jobs": "4",
+    "db_pool_size": null,
+    "db_max_overflow": null,
+    "db_pool_timeout": null,
+    "db_pool_recycle": null,
+    "database_url": "sqlite:///./fashion_app.db",
+    "env": null
+  },
+  "analyze": {
+    "total_requests": 8,
+    "successful_requests": 7,
+    "failed_requests": 1,
+    "success_rate": 0.875,
+    "status_counts": {
+      "500": 1,
+      "200": 7
+    },
+    "latency_ms": {
+      "mean_all": 2920.3402624843875,
+      "p50_all": 3057.102399994619,
+      "p95_all": 3399.1947299800813,
+      "mean_success": 3100.8997285472497,
+      "p50_success": 3115.5227000126615,
+      "p95_success": 3403.99363997858
+    },
+    "failure_details": {
+      "Internal Server Error": 1
+    }
+  },
+  "wardrobe_add": {
+    "total_requests": 8,
+    "successful_requests": 8,
+    "failed_requests": 0,
+    "success_rate": 1.0,
+    "status_counts": {
+      "200": 8
+    },
+    "latency_ms": {
+      "mean_all": 7389.596950015402,
+      "p50_all": 7392.143850040156,
+      "p95_all": 7996.5182800078765,
+      "mean_success": 7389.596950015402,
+      "p50_success": 7392.143850040156,
+      "p95_success": 7996.5182800078765
+    },
+    "failure_details": {}
+  }
+}

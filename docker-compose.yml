@@ -1,0 +1,127 @@
+version: '3.8'
+
+# Fashion App Multi-Container Setup
+# Services: Redis, Backend API, Frontend, Celery Worker, Celery Beat
+#
+# Usage:
+#   docker-compose up -d          # Start all services
+#   docker-compose logs -f        # View logs
+#   docker-compose ps             # Check status
+#   docker-compose down           # Stop all services
+#
+# See DOCKER_SETUP.md for complete configuration and troubleshooting guide
+
+services:
+  # Redis - Message broker and result backend
+  redis:
+    image: redis:latest
+    container_name: fashion-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - fashion_network
+    environment:
+      - REDIS_LOGLEVEL=notice
+
+  # Backend API - FastAPI with Uvicorn
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fashion-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./clothing_database.db
+      - ENV=development
+    volumes:
+      - ./backend:/app
+      - backend_db:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - fashion_network
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Celery Worker - Process background tasks
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fashion-celery-worker
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./clothing_database.db
+      - ENV=development
+    volumes:
+      - ./backend:/app
+      - backend_db:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - fashion_network
+    command: celery -A worker_tasks worker --loglevel=info
+
+  # Celery Beat - Scheduler for periodic tasks
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fashion-celery-beat
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=sqlite:///./clothing_database.db
+      - ENV=development
+    volumes:
+      - ./backend:/app
+      - backend_db:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - fashion_network
+    command: celery -A worker_tasks beat --loglevel=info
+
+  # Frontend - React Vite dev server
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fashion-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - fashion_network
+    environment:
+      - VITE_BACKEND_URL=http://backend:8000
+
+networks:
+  fashion_network:
+    driver: bridge
+
+volumes:
+  backend_db:
+    driver: local

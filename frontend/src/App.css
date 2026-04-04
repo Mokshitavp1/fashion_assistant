@@ -1,0 +1,20 @@
+/* ── FitMe — app.css ──────────────────────────────────────────────────────
+   Replaces Vite's boilerplate defaults.
+   Global layout rules live here; page-specific styles are in each component.
+   ───────────────────────────────────────────────────────────────────────── */
+
+#root {
+  /* Remove Vite's max-width / centering — pages manage their own layout */
+  min-height: 100vh;
+}
+
+/* ── Utility: visually hidden (accessibility) ── */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}

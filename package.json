@@ -1,0 +1,15 @@
+{
+  "name": "fashion_app",
+  "private": true,
+  "scripts": {
+    "dev": "npm run frontend:dev",
+    "build": "npm run frontend:build",
+    "lint": "npm run frontend:lint",
+    "preview": "npm run frontend:preview",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:lint": "npm --prefix frontend run lint",
+    "frontend:preview": "npm --prefix frontend run preview",
+    "backend:dev": "uvicorn backend.main:app --reload --app-dir backend"
+  }
+}

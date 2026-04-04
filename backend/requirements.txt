@@ -1,0 +1,24 @@
+# ...existing packages...
+fastapi
+uvicorn
+sqlalchemy
+pymysql
+psycopg[binary]
+python-multipart
+opencv-python
+numpy
+scikit-learn
+ultralytics
+pydantic[email]
+python-jose[cryptography]
+PyJWT
+slowapi
+python-dotenv
+redis
+celery
+torch
+torchvision
+tqdm
+transformers
+Pillow
+cryptography
