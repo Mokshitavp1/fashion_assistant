@@ -402,7 +402,7 @@ def is_rule_based() -> bool:
 
 def is_ai_based() -> bool:
     """Backward-compatible alias retained for callers that still use the old function name."""
-	return False
+    return False
 
 def list_model_indicators() -> List[str]:
     """Common keywords/files/deps to search for model or inference usage."""
@@ -423,16 +423,16 @@ def list_model_indicators() -> List[str]:
 
 def list_ai_indicators() -> List[str]:
     """Backward-compatible alias retained for callers that still use the old function name."""
-	return [
-		"openai",
-		"api.openai.com",
-		"transformers",
-		"torch",
-		"tensorflow",
-		"sklearn",
-		"model.predict",
-		"inference",
-		"huggingface",
-		"GPT",
-		"llm",
-	]
+    return [
+        "openai",
+        "api.openai.com",
+        "transformers",
+        "torch",
+        "tensorflow",
+        "sklearn",
+        "model.predict",
+        "inference",
+        "huggingface",
+        "GPT",
+        "llm",
+    ]

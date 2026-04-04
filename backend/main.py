@@ -9,9 +9,11 @@ import asyncio
 import base64
 import hashlib
 import hmac
+import smtplib
 import re
 import secrets
 import uuid
+from email.message import EmailMessage
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, Tuple
 import cv2
@@ -120,6 +122,12 @@ EMAIL_VERIFICATION_EXPIRATION_HOURS = int(os.getenv("EMAIL_VERIFICATION_EXPIRATI
 PBKDF2_ITERATIONS = int(os.getenv("PBKDF2_ITERATIONS", "310000"))
 ENVIRONMENT = os.getenv("ENV", "development").lower()
 IS_DEV_ENV = ENVIRONMENT in {"dev", "development", "local"}
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
+SMTP_FROM_ADDRESS = os.getenv("SMTP_FROM_ADDRESS", SMTP_USERNAME).strip()
+SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").strip().lower() in {"1", "true", "yes", "on"}
 MAX_CONCURRENT_IMAGE_JOBS = int(os.getenv("MAX_CONCURRENT_IMAGE_JOBS", "4"))
 IMAGE_JOB_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_IMAGE_JOBS)
 INFERENCE_QUEUE_ENABLED = os.getenv(
@@ -179,9 +187,9 @@ class UserCreate(BaseModel):
         email = str(v).strip().lower()
         gmail_pattern = r'^[a-z0-9](?:[a-z0-9._%+-]{0,61}[a-z0-9])?@gmail\.com$'
         if not re.match(gmail_pattern, email):
-            raise ValueError('Please use a valid @gmail.com address')
+            raise ValueError('Email not valid. Please use a real Gmail address.')
         if '..' in email.split('@', 1)[0]:
-            raise ValueError('Please use a valid @gmail.com address')
+            raise ValueError('Email not valid. Please use a real Gmail address.')
         return email
 
 class UserLogin(BaseModel):
@@ -439,7 +447,7 @@ def verify_password(password: str, stored_hash: str) -> bool:
         return False
 
 def create_email_verification_token() -> Tuple[str, str, datetime]:
-    raw_token = secrets.token_urlsafe(32)
+    raw_token = f"{secrets.randbelow(1_000_000):06d}"
     token_hash = hmac.new(
         SECRET_KEY.encode("utf-8"),
         raw_token.encode("utf-8"),
@@ -454,6 +462,37 @@ def hash_email_verification_token(token: str) -> str:
         token.strip().encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
+
+def send_verification_code_email(recipient_email: str, verification_code: str) -> None:
+    if not SMTP_USERNAME or not SMTP_PASSWORD:
+        if IS_DEV_ENV:
+            logger.info(
+                "DEV_EMAIL_VERIFICATION recipient=%s code=%s",
+                recipient_email,
+                verification_code,
+            )
+            return
+        raise RuntimeError("SMTP credentials are required to send verification emails")
+
+    message = EmailMessage()
+    message["Subject"] = "Your Fashion App confirmation code"
+    message["From"] = SMTP_FROM_ADDRESS or SMTP_USERNAME
+    message["To"] = recipient_email
+    message.set_content(
+        """Your confirmation code is below.
+
+Confirmation code: {code}
+
+This code expires in {hours} hours.
+If you did not request this, you can ignore this email.
+""".format(code=verification_code, hours=EMAIL_VERIFICATION_EXPIRATION_HOURS)
+    )
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+        if SMTP_USE_TLS:
+            server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(message)
 
 def create_token(user_id: int, token_type: str, expires_delta: timedelta) -> Dict[str, Any]:
     now = datetime.utcnow()
@@ -617,10 +656,15 @@ async def register(
 
     verification_token, token_hash, expires_at = create_email_verification_token()
     crud.set_email_verification_token(db, user.id, token_hash, expires_at)
+    try:
+        send_verification_code_email(user.email, verification_token)
+    except RuntimeError as exc:
+        logger.error("Failed to send verification code to %s: %s", user.email, exc)
+        raise HTTPException(status_code=502, detail="Unable to send confirmation email right now.")
 
     audit_auth_event("register", request, "success", user_id=user.id, email=user.email)
     return {
-        "detail": "Account created. Please confirm your email before signing in.",
+        "detail": "Account created. Please check your Gmail for the confirmation code.",
         "email_verification_required": True,
         "email": user.email,
         "verification_token": verification_token if ENVIRONMENT in {"development", "dev", "local", "test"} else None,
@@ -719,9 +763,14 @@ async def resend_verification_email(
 
     verification_token, token_hash, expires_at = create_email_verification_token()
     crud.set_email_verification_token(db, user.id, token_hash, expires_at)
+    try:
+        send_verification_code_email(user.email, verification_token)
+    except RuntimeError as exc:
+        logger.error("Failed to resend verification code to %s: %s", user.email, exc)
+        raise HTTPException(status_code=502, detail="Unable to send confirmation email right now.")
     audit_auth_event("resend_verification", request, "success", user_id=user.id, email=user.email)
     return {
-        "detail": "A fresh verification token was generated.",
+        "detail": "A fresh confirmation code was sent.",
         "email_verification_required": True,
         "email": user.email,
         "verification_token": verification_token if ENVIRONMENT in {"development", "dev", "local", "test"} else None,

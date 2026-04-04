@@ -5,7 +5,7 @@ sqlalchemy
 pymysql
 psycopg[binary]
 python-multipart
-opencv-python
+opencv-python-headless
 numpy
 scikit-learn
 ultralytics

@@ -77,6 +77,11 @@ This backend is a FastAPI app with JWT auth, image processing, and SQLAlchemy.
   - Example generation command:
     - `python -c "import secrets; print(secrets.token_urlsafe(48))"`
 
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_ADDRESS`, `SMTP_USE_TLS`
+  - Used to send email confirmation codes after registration and resend requests.
+  - For Gmail, use `smtp.gmail.com`, port `587`, and a Gmail app password rather than your normal account password.
+  - If SMTP is not configured in development, the backend logs the code instead of sending email.
+
 - `ACCESS_TOKEN_EXPIRATION_MINUTES`
   - Access token TTL in minutes.
   - Default: `15`

@@ -7,6 +7,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
+    libgl1 \
+    libglib2.0-0 \
+    libxcb1 \
     python3-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*

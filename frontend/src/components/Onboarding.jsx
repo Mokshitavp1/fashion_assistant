@@ -536,7 +536,7 @@ function Onboarding() {
         return;
       }
       if (!isValidGmailAddress(email)) {
-        throw new Error('Please use a valid @gmail.com address');
+        throw new Error('Email not valid. Please use a real Gmail address.');
       }
       const userResponse = await createUser(name, email, password);
       setVerificationPending(true);
@@ -653,7 +653,7 @@ function Onboarding() {
                 </div>
                 {verificationToken && (
                   <p style={{ marginTop: 12, fontSize: '0.8rem', color: 'var(--mid)' }}>
-                    Dev token: <strong>{verificationToken}</strong>
+                    Dev code: <strong>{verificationToken}</strong>
                   </p>
                 )}
               </div>
@@ -703,7 +703,7 @@ function Onboarding() {
                 </div>
                 <button className="btn-primary" onClick={() => {
                   if (!isValidGmailAddress(email)) {
-                    setError('Please use a valid @gmail.com address');
+                    setError('Email not valid. Please use a real Gmail address.');
                     return;
                   }
                   setStep(2);
