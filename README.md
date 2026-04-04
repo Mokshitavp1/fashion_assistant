@@ -21,6 +21,19 @@ If you want the easiest path for GitHub users, use Docker:
 
 That starts the frontend, backend, Redis, Celery worker, and Celery Beat.
 
+## GitHub Codespaces
+
+If you want a browser-based setup with no local installs, open the repo on GitHub and choose `Code` > `Codespaces` > `Create codespace on main`.
+
+The codespace is preconfigured to:
+- Install Python and Node dependencies on first launch
+- Forward the frontend on port `5173`
+- Forward the backend API on port `8000`
+
+Once it opens, start the app with:
+- Backend: `npm run backend:dev`
+- Frontend: `npm run dev`
+
 ## Local Development
 
 If you prefer running it without Docker:
