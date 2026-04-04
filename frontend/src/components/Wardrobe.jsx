@@ -34,7 +34,7 @@ function Wardrobe() {
     try {
       await deleteWardrobeItem(userId, id);
       setItems(items.filter(i => i.id !== id));
-    } catch (e) { alert('Failed to delete item'); }
+    } catch { alert('Failed to delete item'); }
   };
 
   if (loading) {
@@ -178,7 +178,7 @@ function AddModal({ userId, onClose, onSuccess }) {
     try {
       await addWardrobeItem(userId, image, category, season);
       onSuccess();
-    } catch (e) { alert('Failed to add item'); }
+    } catch { alert('Failed to add item'); }
     finally { setLoading(false); }
   };
 

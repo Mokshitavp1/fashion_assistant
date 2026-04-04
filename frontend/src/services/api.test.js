@@ -66,21 +66,22 @@ describe('frontend api service', () => {
         vi.clearAllMocks()
     })
 
-    it('stores auth tokens on createUser', async () => {
+    it('returns register response without storing auth tokens', async () => {
         const { apiModule, apiMock } = await loadModule()
-        const payload = { access_token: 'a1', refresh_token: 'r1', user_id: 42 }
+        const payload = { email_verification_required: true, email: 'alice@example.com' }
         apiMock.post.mockResolvedValueOnce({ data: payload })
 
-        await apiModule.createUser('Alice', 'alice@example.com', 'Secret123A')
+        const response = await apiModule.createUser('Alice', 'alice@example.com', 'Secret123A')
 
         expect(apiMock.post).toHaveBeenCalledWith('/auth/register', {
             name: 'Alice',
             email: 'alice@example.com',
             password: 'Secret123A',
         })
-        expect(localStorage.getItem('accessToken')).toBe('a1')
-        expect(localStorage.getItem('refreshToken')).toBe('r1')
-        expect(localStorage.getItem('userId')).toBe('42')
+        expect(response.data.email_verification_required).toBe(true)
+        expect(localStorage.getItem('accessToken')).toBeNull()
+        expect(localStorage.getItem('refreshToken')).toBeNull()
+        expect(localStorage.getItem('userId')).toBeNull()
     })
 
     it('logs out and clears local storage', async () => {

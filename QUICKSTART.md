@@ -31,7 +31,7 @@
 - Edit or delete items
 
 #### ✨ Outfits
-- Get AI-powered outfit recommendations
+- Get personalized outfit recommendations
 - **⭐ NEW: Rate outfits 1-5 stars** (feedback system)
 - Optional comment for additional feedback
 - System learns from your ratings!

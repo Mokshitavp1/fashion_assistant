@@ -608,7 +608,7 @@ function Onboarding() {
           {authMode === 'signup' && (
             <>
               <div className="ob-steps">
-                {[1, 2, 3].map((s, i) => (
+                {[1, 2, 3].map((s) => (
                   <div key={s} style={{ display: 'flex', alignItems: 'center', flex: s < 3 ? 1 : 'none' }}>
                     <div className={`ob-step-dot ${step > s ? 'done' : step === s ? 'active' : ''}`}>{s}</div>
                     {s < 3 && <div className={`ob-step-line ${step > s ? 'done' : ''}`} />}

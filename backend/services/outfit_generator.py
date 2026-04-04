@@ -396,12 +396,33 @@ def get_outfit_recommendations(
     
     return recommendations
 
+def is_rule_based() -> bool:
+    """Return True: this module uses rule-based scoring and combinations."""
+    return True
+
 def is_ai_based() -> bool:
-	"""Return False: this module uses rule-based scoring and combinations, not ML or external AI APIs."""
+    """Backward-compatible alias retained for callers that still use the old function name."""
 	return False
 
+def list_model_indicators() -> List[str]:
+    """Common keywords/files/deps to search for model or inference usage."""
+    return [
+        "openai",
+        "api.openai.com",
+        "transformers",
+        "torch",
+        "tensorflow",
+        "keras",
+        "onnxruntime",
+        "ultralytics",
+        "llm",
+        "gpt",
+        "claude",
+        "gemini",
+    ]
+
 def list_ai_indicators() -> List[str]:
-	"""Common keywords/files/deps to search for elsewhere in the repo to detect AI usage."""
+    """Backward-compatible alias retained for callers that still use the old function name."""
 	return [
 		"openai",
 		"api.openai.com",
