@@ -33,8 +33,8 @@ from slowapi.errors import RateLimitExceeded
 import jwt
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from backend/.env regardless of the launch directory
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 
 # Import database
 from database.database import engine, SessionLocal

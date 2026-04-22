@@ -1,6 +1,7 @@
 import os
 import base64
 from typing import Any, Dict
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -19,7 +20,7 @@ from services.secure_image_storage import store_encrypted_image
 from services.task_queue import celery_app
 
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().with_name(".env"))
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 
 
