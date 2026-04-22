@@ -48,6 +48,65 @@ If you prefer running it without Docker:
    - Backend: `npm run backend:dev`
    - Frontend: `npm run dev`
 
+## Terminal Commands (Copy/Paste)
+
+Run these from the repository root in a terminal.
+
+### Option A: Docker (recommended)
+
+```powershell
+git clone <your-repo-url>
+cd fashion_app
+docker-compose up -d
+```
+
+Open:
+- Frontend: http://localhost:5173
+- Backend API docs: http://localhost:8000/docs
+
+Stop Docker services:
+
+```powershell
+docker-compose down
+```
+
+### Option B: Local (without Docker)
+
+1. Create env files:
+
+```powershell
+Copy-Item backend/.env.example backend/.env
+Copy-Item frontend/.env.example frontend/.env.local
+```
+
+2. Install backend dependencies:
+
+```powershell
+pip install -r backend/requirements.txt
+```
+
+3. Install frontend dependencies:
+
+```powershell
+npm --prefix frontend install
+```
+
+4. Start backend in Terminal 1:
+
+```powershell
+npm run backend:dev
+```
+
+5. Start frontend in Terminal 2:
+
+```powershell
+npm run dev
+```
+
+Open:
+- Frontend: http://localhost:5173
+- Backend API docs: http://localhost:8000/docs
+
 ## How to test it
 
 1. Go to http://localhost:5173
