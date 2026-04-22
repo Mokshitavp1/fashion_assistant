@@ -10,6 +10,6 @@
     "frontend:build": "npm --prefix frontend run build",
     "frontend:lint": "npm --prefix frontend run lint",
     "frontend:preview": "npm --prefix frontend run preview",
-    "backend:dev": "uvicorn backend.main:app --reload --app-dir backend"
+    "backend:dev": "uvicorn main:app --reload --app-dir backend"
   }
 }
