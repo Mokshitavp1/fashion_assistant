@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { analyzeShoppingItem } from '../services/api';
 import { ArrowLeft, Camera, Upload, ShoppingBag, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { sharedCSS } from './sharedStyles';
+import Notification from './Notification';
 
 function Shopping() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ function Shopping() {
   const [preview, setPreview] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleImg = (e) => {
     const f = e.target.files[0];
@@ -18,12 +20,13 @@ function Shopping() {
   };
 
   const handleAnalyze = async () => {
-    if (!image) { alert('Please select an image'); return; }
+    if (!image) { setError('Please select an image'); return; }
     setLoading(true);
     try {
       const r = await analyzeShoppingItem(userId, image);
       setAnalysis(r.data.analysis);
-    } catch (e) { alert(e.response?.data?.detail || 'Failed to analyse item'); }
+      setError('');
+    } catch (e) { setError(e.response?.data?.detail || 'Failed to analyse item'); }
     finally { setLoading(false); }
   };
 
@@ -191,6 +194,14 @@ function Shopping() {
             </div>
           )}
         </div>
+        {error && (
+          <Notification
+            id="shopping-error"
+            message={error}
+            type="error"
+            onClose={() => setError('')}
+          />
+        )}
       </div>
     </>
   );

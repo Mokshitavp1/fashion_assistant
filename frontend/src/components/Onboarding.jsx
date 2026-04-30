@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, User as UserIcon, Ruler, Weight, ArrowLeft } from 'lucide-react';
 import { createUser, analyzeUser, loginUser, confirmEmailVerification, resendEmailVerification } from '../services/api';
+import Notification from './Notification';
 
 const GMAIL_PATTERN = /^[a-z0-9](?:[a-z0-9._%+-]{0,61}[a-z0-9])?@gmail\.com$/i;
 
@@ -625,9 +626,6 @@ function Onboarding() {
 
           {/* Body */}
           <div className="ob-body">
-            {error && <div className="alert-error">{error}</div>}
-            {verificationMessage && <div className="alert-success">{verificationMessage}</div>}
-
             {verificationPending && (
               <div className="review-box" style={{ marginBottom: 18 }}>
                 <div className="review-title">Confirm your Gmail</div>
@@ -657,6 +655,23 @@ function Onboarding() {
                   </p>
                 )}
               </div>
+            )}
+
+            {error && (
+              <Notification
+                id="onboarding-error"
+                message={error}
+                type="error"
+                onClose={() => setError('')}
+              />
+            )}
+            {verificationMessage && (
+              <Notification
+                id="onboarding-success"
+                message={verificationMessage}
+                type="success"
+                onClose={() => setVerificationMessage('')}
+              />
             )}
 
             {/* ── SIGN IN ── */}

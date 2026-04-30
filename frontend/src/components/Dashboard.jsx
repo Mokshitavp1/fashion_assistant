@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUser, logoutUser } from '../services/api';
 import { User, Shirt, Sparkles, ShoppingBag, LogOut, Shield } from 'lucide-react';
+import Notification from './Notification';
 import { sharedCSS } from './sharedStyles';
 
 function Dashboard() {
@@ -56,6 +57,16 @@ function Dashboard() {
             <div className="loader-ring" />
             <p className="loader-text">Dressing up your dashboard…</p>
           </div>
+        )}
+        {error && (
+          <Notification
+            id="dashboard-error"
+            message={error}
+            type="error"
+            actionLabel="Retry"
+            onAction={() => { setLoading(true); fetchUser(); }}
+            onClose={() => setError('')}
+          />
         )}
       </>
     );

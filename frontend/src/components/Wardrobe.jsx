@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getWardrobe, addWardrobeItem, deleteWardrobeItem } from '../services/api';
 import { ArrowLeft, Plus, Trash2, Upload, AlertTriangle } from 'lucide-react';
+import Notification from './Notification';
 import { sharedCSS } from './sharedStyles';
 
 const IMAGE_BASE_URL = 'http://127.0.0.1:8000';
@@ -55,34 +56,7 @@ function Wardrobe() {
     );
   }
 
-  if (error) {
-    return (
-      <>
-        <style>{sharedCSS}</style>
-        <div className="pg">
-          <nav className="pg-nav">
-            <div className="pg-nav-left">
-              <button className="pg-back" onClick={() => navigate('/dashboard')}>
-                <ArrowLeft size={13} /> Dashboard
-              </button>
-              <span className="pg-title">My Wardrobe</span>
-            </div>
-          </nav>
-          <div className="pg-body-narrow" style={{ textAlign: 'center', paddingTop: 60 }}>
-            <div className="wcard wcard-pad">
-              <AlertTriangle size={40} style={{ color: 'var(--terra)', margin: '0 auto 16px' }} />
-              <div style={{ fontFamily: 'Playfair Display,serif', fontSize: '1.2rem', marginBottom: 8 }}>Unable to load wardrobe</div>
-              <p style={{ color: 'var(--mid)', marginBottom: 18 }}>{error}</p>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                <button className="btn-p" onClick={() => { setLoading(true); fetchWardrobe(); }}>Retry</button>
-                <button className="btn-s" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+
 
   return (
     <>
@@ -150,6 +124,16 @@ function Wardrobe() {
           userId={userId}
           onClose={() => setShowModal(false)}
           onSuccess={() => { setShowModal(false); fetchWardrobe(); }}
+        />
+      )}
+      {error && (
+        <Notification
+          id="wardrobe-error"
+          message={error}
+          type="error"
+          actionLabel="Retry"
+          onAction={() => { setLoading(true); fetchWardrobe(); }}
+          onClose={() => setError('')}
         />
       )}
     </>

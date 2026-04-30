@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, KeyRound } from 'lucide-react';
 import { loginUser, requestPasswordReset, confirmPasswordReset } from '../services/api';
+import Notification from './Notification';
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Sans:wght@300;400;500&display=swap');
@@ -456,9 +457,6 @@ function Login() {
           <div className="login-body">
             <p className="login-welcome">Welcome back, darling ✨</p>
 
-            {error && <div className="alert-error">{error}</div>}
-            {resetMessage && <div className="alert-success">{resetMessage}</div>}
-
             <div className="lf">
               <label>Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
@@ -511,6 +509,23 @@ function Login() {
             <div className="login-footer">
               New here? <button onClick={() => navigate('/onboarding')}>Create an account</button>
             </div>
+
+            {error && (
+              <Notification
+                id="login-error"
+                message={error}
+                type="error"
+                onClose={() => setError('')}
+              />
+            )}
+            {resetMessage && (
+              <Notification
+                id="login-success"
+                message={resetMessage}
+                type="success"
+                onClose={() => setResetMessage('')}
+              />
+            )}
           </div>
         </div>
       </div>

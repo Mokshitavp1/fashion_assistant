@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, RefreshCw, LogOut, ArrowLeft, Clock, Monitor } from 'lucide-react';
 import { getAuthSessions, revokeAuthSession, logoutAllDevices } from '../services/api';
 import { sharedCSS } from './sharedStyles';
+import Notification from './Notification';
 
 const fmtDate = (v) => {
   if (!v) return '—';
@@ -88,8 +89,6 @@ function Sessions() {
             </div>
           </div>
 
-          {error && <div className="alert-e">{error}</div>}
-
           {/* Sessions list */}
           {loading ? (
             <div className="wcard wcard-pad" style={{ color: 'var(--mid)', fontStyle: 'italic', fontFamily: 'Cormorant Garamond,serif' }}>
@@ -134,6 +133,16 @@ function Sessions() {
                 </div>
               ))}
             </div>
+          )}
+          {error && (
+            <Notification
+              id="sessions-error"
+              message={error}
+              type="error"
+              actionLabel="Refresh"
+              onAction={loadSessions}
+              onClose={() => setError('')}
+            />
           )}
         </div>
       </div>

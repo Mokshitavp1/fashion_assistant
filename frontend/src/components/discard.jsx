@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getDiscardRecommendations } from '../services/api';
 import { ArrowLeft, Trash2, Heart, Lightbulb, AlertTriangle, CheckCircle } from 'lucide-react';
 import { sharedCSS } from './sharedStyles';
+import Notification from './Notification';
 
 const IMAGE_BASE_URL = 'http://127.0.0.1:8000';
 
@@ -142,6 +143,12 @@ function Discard() {
           </div>
         </div>
       </div>
+      <Notification
+        id="discard-error"
+        message={error}
+        type="error"
+        onClose={() => setError('')}
+      />
     </>
   );
 

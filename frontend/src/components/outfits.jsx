@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getOutfitRecommendations, rateOutfit } from '../services/api';
 import { ArrowLeft, Sparkles, TrendingUp, Palette, User, Star } from 'lucide-react';
 import { sharedCSS } from './sharedStyles';
+import Notification from './Notification';
 
 function Outfits() {
   const navigate = useNavigate();
@@ -64,6 +65,16 @@ function Outfits() {
             outfits.map(outfit => <OutfitCard key={outfit.outfit_number} outfit={outfit} />)
           )}
         </div>
+        {error && (
+          <Notification
+            id="outfits-error"
+            message={error}
+            type="error"
+            actionLabel="Retry"
+            onAction={fetchOutfits}
+            onClose={() => setError('')}
+          />
+        )}
       </div>
     </>
   );
