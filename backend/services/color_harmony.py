@@ -43,7 +43,25 @@
 # - checks pairwise color harmony between all colors
 # - returns an overall color harmony score (0-1)
 # - higher score means better color combination
+def _validate_rgb(rgb: tuple) -> tuple:
+    if not isinstance(rgb, (tuple, list)):
+        raise ValueError("RGB color must be a tuple or list of three numeric values")
+    if len(rgb) != 3:
+        raise ValueError("RGB color must contain exactly three values")
+
+    validated = []
+    for channel in rgb:
+        if not isinstance(channel, (int, float)):
+            raise ValueError("RGB color channels must be numeric")
+        if channel < 0 or channel > 255:
+            raise ValueError("RGB color channels must be between 0 and 255")
+        validated.append(float(channel))
+
+    return tuple(validated)
+
+
 def rgb_to_hsv(rgb: tuple) -> tuple:
+    rgb = _validate_rgb(rgb)
     r, g, b = [x / 255.0 for x in rgb]
     mx = max(r, g, b)
     mn = min(r, g, b)
@@ -96,15 +114,18 @@ def check_color_harmony(rgb1: tuple, rgb2: tuple) -> dict:
     else:
         return {"compatible": False, "harmony_type": "none", "score": 0.0}  
 def calculate_outfit_color_score(colors: list) -> float:
+    if not isinstance(colors, list):
+        raise ValueError("colors must be provided as a list of RGB tuples")
     if len(colors) < 2:
         return 1.0  
     
+    validated_colors = [_validate_rgb(color) for color in colors]
     total_score = 0.0
     comparisons = 0
     
-    for i in range(len(colors)):
-        for j in range(i + 1, len(colors)):
-            harmony = check_color_harmony(colors[i], colors[j])
+    for i in range(len(validated_colors)):
+        for j in range(i + 1, len(validated_colors)):
+            harmony = check_color_harmony(validated_colors[i], validated_colors[j])
             total_score += harmony["score"]
             comparisons += 1
             

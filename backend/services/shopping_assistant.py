@@ -41,6 +41,31 @@ from services.outfit_generator import parse_rgb_from_string, categorize_wardrobe
 from services.body_shape_rules import get_body_shape_score
 import cv2
 
+
+def _require_non_empty_string(value: str, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{field_name} is required")
+    return normalized
+
+
+def _validate_score(score: float, field_name: str) -> float:
+    if not isinstance(score, (int, float)):
+        raise ValueError(f"{field_name} must be numeric")
+    if score < 0 or score > 1:
+        raise ValueError(f"{field_name} must be between 0 and 1")
+    return float(score)
+
+
+def _validate_wardrobe_items(wardrobe_items: List[WardrobeItem]) -> None:
+    if not isinstance(wardrobe_items, list):
+        raise ValueError("wardrobe_items must be a list")
+    for item in wardrobe_items:
+        if not isinstance(item, WardrobeItem):
+            raise ValueError("wardrobe_items must contain WardrobeItem objects")
+
 def find_matching_wardrobe_items(
     new_item_color: str,
     new_item_category: str,
@@ -57,6 +82,10 @@ def find_matching_wardrobe_items(
     Returns:
         List of compatible items with harmony scores
     """
+    new_item_color = _require_non_empty_string(new_item_color, "new_item_color")
+    new_item_category = _require_non_empty_string(new_item_category, "new_item_category").lower()
+    _validate_wardrobe_items(wardrobe_items)
+
     categorized_items = categorize_wardrobe_items(wardrobe_items)
     potential_matches = []
     
@@ -105,6 +134,13 @@ def calculate_wardrobe_compatibility_score(
     Returns:
         dict: compatibility_score (float), match_count (int)
     """
+    if not isinstance(matching_items, list):
+        raise ValueError("matching_items must be a list")
+    if not isinstance(total_relevant_items, int):
+        raise ValueError("total_relevant_items must be an integer")
+    if total_relevant_items < 0:
+        raise ValueError("total_relevant_items must be greater than or equal to 0")
+
     if total_relevant_items == 0:
         return {"compatibility_score": 0.0, "match_count": 0}
     
@@ -140,6 +176,10 @@ def check_duplicate_in_wardrobe(
     Returns:
         dict: is_duplicate (bool), similar_items (list)
     """
+    new_item_color = _require_non_empty_string(new_item_color, "new_item_color")
+    new_item_type = _require_non_empty_string(new_item_type, "new_item_type")
+    _validate_wardrobe_items(wardrobe_items)
+
     similar_items = []
     
     for item in wardrobe_items:
@@ -175,6 +215,15 @@ def generate_purchase_recommendation(
     Returns:
         dict: recommendation ("buy", "maybe", "skip"), reasons (list)
     """
+    compatibility_score = _validate_score(compatibility_score, "compatibility_score")
+    body_shape_score = _validate_score(body_shape_score, "body_shape_score")
+    if not isinstance(is_duplicate, bool):
+        raise ValueError("is_duplicate must be a boolean")
+    if not isinstance(matching_items_count, int):
+        raise ValueError("matching_items_count must be an integer")
+    if matching_items_count < 0:
+        raise ValueError("matching_items_count must be greater than or equal to 0")
+
     reasons = []
     
     # Analyze each factor
@@ -231,11 +280,15 @@ def analyze_shopping_item(
     Returns:
         Comprehensive analysis with purchase recommendation
     """
+    _validate_wardrobe_items(wardrobe_items)
+    user_body_shape = user_body_shape.strip() if isinstance(user_body_shape, str) else user_body_shape
+    user_undertone = user_undertone.strip() if isinstance(user_undertone, str) else user_undertone
+
     # Step 1: Classify the new item
     classification = classify_clothing(image)
     
-    new_item_color = classification["color_primary"]
-    new_item_type = classification["type"]
+    new_item_color = _require_non_empty_string(classification.get("color_primary"), "classification.color_primary")
+    new_item_type = _require_non_empty_string(classification.get("type"), "classification.type")
     new_item_category = "top" if new_item_type in ["shirt", "dress"] else "bottom"
     
     # Step 2: Find matching wardrobe items
