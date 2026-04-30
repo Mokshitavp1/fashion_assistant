@@ -36,7 +36,7 @@ def _select_best_person(results, image_bgr) -> Tuple[np.ndarray, Dict]:
     for idx, keypoints_data in enumerate(keypoints_list):
         quality = _assess_pose_quality(keypoints_data, image_width, image_height)
         
-        # Composite score: mean confidence, visibility ratio, and size
+        # Weight shoulder/hip visibility slightly higher than raw box size because pose quality is the main signal.
         composite_score = (
             quality["mean_confidence"] * 0.5 +
             quality["visible_ratio"] * 0.35 +
@@ -284,7 +284,7 @@ def classify_body_shape_with_bmi(image_bgr, height_cm, weight_kg):
     # Calculate BMI
     bmi = weight_kg / ((height_cm / 100) ** 2)
     
-    # BMI-based adjustments (only for confident measurements)
+    # BMI-based adjustments only kick in when the pose is strong enough to trust the base silhouette.
     body_shape = base_shape
     if shape_confidence > 0.6 and bmi > 27:
         if base_shape == "rectangle":

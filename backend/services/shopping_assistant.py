@@ -60,7 +60,7 @@ def find_matching_wardrobe_items(
     categorized_items = categorize_wardrobe_items(wardrobe_items)
     potential_matches = []
     
-    # Find complementary categories
+    # Find complementary categories so we only score items that can actually form outfits.
     if new_item_category == "top":
         potential_matches = categorized_items.get("bottom", [])
     elif new_item_category == "bottom":
@@ -110,7 +110,7 @@ def calculate_wardrobe_compatibility_score(
     
     match_count = len(matching_items)
     
-    # Calculate compatibility as percentage of wardrobe that matches
+    # Coverage alone can overrate easy-to-match basics, so blend coverage with harmony quality.
     compatibility_score = min(match_count / max(total_relevant_items, 1), 1.0)
     
     # Boost score slightly if there are any good matches
@@ -194,7 +194,7 @@ def generate_purchase_recommendation(
     if matching_items_count == 0:
         reasons.append("❌ Doesn't match any items in your wardrobe")
     
-    # Decision logic
+    # Decision logic stays conservative: duplicates or weak signals should dominate the outcome.
     if is_duplicate:
         recommendation = "skip"
         reasons.append("💡 Consider something different to diversify your wardrobe")
