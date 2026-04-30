@@ -1749,6 +1749,99 @@ async def track_item_usage(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/users/{user_id}/feedback/summary")
+async def get_user_feedback_summary(
+    user_id: int,
+    days: int = 30,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user_id: int = Depends(verify_token),
+):
+    """Return recent feedback and usage signals for a single user."""
+    verify_user_ownership(user_id, current_user_id)
+
+    days = max(1, min(days, 365))
+    limit = max(1, min(limit, 50))
+    cutoff_date = datetime.utcnow() - timedelta(days=days)
+
+    outfit_ratings = (
+        db.query(models.OutfitRating)
+        .filter(
+            models.OutfitRating.user_id == user_id,
+            models.OutfitRating.created_at >= cutoff_date,
+        )
+        .order_by(models.OutfitRating.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    recommendation_feedback = (
+        db.query(models.RecommendationFeedback)
+        .filter(
+            models.RecommendationFeedback.user_id == user_id,
+            models.RecommendationFeedback.created_at >= cutoff_date,
+        )
+        .order_by(models.RecommendationFeedback.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    item_usage = (
+        db.query(models.ItemUsage)
+        .filter(
+            models.ItemUsage.user_id == user_id,
+            models.ItemUsage.created_at >= cutoff_date,
+        )
+        .order_by(models.ItemUsage.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    helpful_feedback_count = sum(1 for feedback in recommendation_feedback if bool(feedback.helpful))
+    average_outfit_rating = round(sum(rating.rating for rating in outfit_ratings) / len(outfit_ratings), 2) if outfit_ratings else None
+    helpful_rate = round(helpful_feedback_count / len(recommendation_feedback), 2) if recommendation_feedback else None
+
+    return {
+        "user_id": user_id,
+        "period_days": days,
+        "summary": {
+            "outfit_ratings_count": len(outfit_ratings),
+            "recommendation_feedback_count": len(recommendation_feedback),
+            "item_usage_count": len(item_usage),
+            "average_outfit_rating": average_outfit_rating,
+            "helpful_rate": helpful_rate,
+        },
+        "outfit_ratings": [
+            {
+                "id": rating.id,
+                "outfit_id": rating.outfit_id,
+                "rating": rating.rating,
+                "comment": rating.comment,
+                "created_at": rating.created_at,
+            }
+            for rating in outfit_ratings
+        ],
+        "recommendation_feedback": [
+            {
+                "id": feedback.id,
+                "recommendation_type": feedback.recommendation_type,
+                "recommendation_id": feedback.recommendation_id,
+                "helpful": bool(feedback.helpful),
+                "created_at": feedback.created_at,
+            }
+            for feedback in recommendation_feedback
+        ],
+        "item_usage": [
+            {
+                "id": usage.id,
+                "item_id": usage.item_id,
+                "action": usage.action,
+                "wear_count": usage.wear_count,
+                "created_at": usage.created_at,
+            }
+            for usage in item_usage
+        ],
+    }
+
+
 # ============ ADMIN METRICS ENDPOINTS ============
 
 @app.get("/admin/metrics/models")
