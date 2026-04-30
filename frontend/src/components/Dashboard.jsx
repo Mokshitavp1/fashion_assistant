@@ -23,7 +23,7 @@ function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, userId]);
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) { navigate('/onboarding'); return; }
