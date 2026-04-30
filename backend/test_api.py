@@ -27,14 +27,20 @@ def get_auth_headers():
 
 
 print("Testing server...")
-response = requests.get(f"{BASE_URL}/")
-print("Server status:", response.json())
+def main():
+    print("Testing server...")
+    response = requests.get(f"{BASE_URL}/")
+    print("Server status:", response.json())
 
-print("\nTesting authenticated profile fetch...")
-try:
-    user_id, headers = get_auth_headers()
-    profile_resp = requests.get(f"{BASE_URL}/users/{user_id}", headers=headers)
-    print(f"Status: {profile_resp.status_code}")
-    print(profile_resp.text)
-except Exception as e:
-    print(f"Error: {e}")
+    print("\nTesting authenticated profile fetch...")
+    try:
+        user_id, headers = get_auth_headers()
+        profile_resp = requests.get(f"{BASE_URL}/users/{user_id}", headers=headers)
+        print(f"Status: {profile_resp.status_code}")
+        print(profile_resp.text)
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+    main()
