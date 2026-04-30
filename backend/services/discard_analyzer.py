@@ -48,6 +48,43 @@ from services.color_harmony import get_color_temperature
 from services.body_shape_rules import get_body_shape_score
 from services.outfit_generator import parse_rgb_from_string, categorize_wardrobe_items
 
+
+def _calculate_discard_score(
+    undertone_score: float,
+    body_shape_score: float,
+    versatility_score: float,
+) -> float:
+    return (
+        undertone_score * 0.3
+        + body_shape_score * 0.4
+        + versatility_score * 0.3
+    )
+
+
+def _collect_discard_reasons(
+    undertone_check: Dict,
+    body_shape_check: Dict,
+    versatility: Dict,
+) -> List[str]:
+    reasons: List[str] = []
+
+    if not undertone_check["compatible"]:
+        reasons.append(undertone_check["reason"])
+
+    if not body_shape_check["compatible"]:
+        reasons.append(body_shape_check["reason"])
+
+    if versatility["potential_outfits"] <= 1:
+        reasons.append(
+            f"Low versatility - only {versatility['potential_outfits']} potential outfit(s)"
+        )
+
+    return reasons
+
+
+def _is_discard_candidate(overall_score: float, discard_threshold: float) -> bool:
+    return overall_score < discard_threshold
+
 def check_undertone_compatibility(item_color: str, user_undertone: str) -> Dict:
     """
     Check if item color matches user's undertone.
@@ -207,33 +244,15 @@ def analyze_item_for_discard(
     Returns:
         dict: Analysis results with scores and recommendations
     """
-    # Check undertone compatibility
     undertone_check = check_undertone_compatibility(item.color_primary, user_undertone)
-    
-    # Check body shape compatibility
     body_shape_check = check_body_shape_compatibility(item, user_body_shape)
-    
-    # Calculate versatility
     versatility = calculate_item_versatility(item, all_items)
-    
-    # Calculate overall score (weighted combination)
-    overall_score = (
-        undertone_check["score"] * 0.3 +
-        body_shape_check["score"] * 0.4 +
-        versatility["versatility_score"] * 0.3
+    overall_score = _calculate_discard_score(
+        undertone_score=undertone_check["score"],
+        body_shape_score=body_shape_check["score"],
+        versatility_score=versatility["versatility_score"],
     )
-    
-    # Collect reasons for potential discard
-    reasons = []
-    if not undertone_check["compatible"]:
-        reasons.append(undertone_check["reason"])
-    if not body_shape_check["compatible"]:
-        reasons.append(body_shape_check["reason"])
-    if versatility["potential_outfits"] <= 1:
-        reasons.append(f"Low versatility - only {versatility['potential_outfits']} potential outfit(s)")
-    
-    # Determine if should discard
-    should_discard = overall_score < 0.5
+    reasons = _collect_discard_reasons(undertone_check, body_shape_check, versatility)
     
     return {
         "item_id": item.id,
@@ -246,7 +265,7 @@ def analyze_item_for_discard(
         "body_shape_score": round(body_shape_check["score"], 2),
         "versatility_score": round(versatility["versatility_score"], 2),
         "potential_outfits": versatility["potential_outfits"],
-        "should_discard": should_discard,
+        "should_discard": _is_discard_candidate(overall_score, 0.5),
         "reasons": reasons if reasons else ["Item works well with your style"]
     }
 
@@ -276,7 +295,6 @@ def get_discard_recommendations(
             "summary": "No items in wardrobe"
         }
     
-    # Analyze each item
     analyzed_items = []
     for item in wardrobe_items:
         analysis = analyze_item_for_discard(
@@ -285,23 +303,25 @@ def get_discard_recommendations(
             user_undertone=user_undertone,
             all_items=wardrobe_items
         )
+        analysis["should_discard"] = _is_discard_candidate(
+            analysis["overall_score"],
+            discard_threshold,
+        )
         analyzed_items.append(analysis)
     
-    # Separate items to discard vs keep
     items_to_discard = [item for item in analyzed_items if item["should_discard"]]
     items_to_keep = [item for item in analyzed_items if not item["should_discard"]]
-    
-    # Sort discard items by score (worst first)
+
     items_to_discard.sort(key=lambda x: x["overall_score"])
-    
-    # Sort keep items by score (best first)
     items_to_keep.sort(key=lambda x: x["overall_score"], reverse=True)
+
+    discard_count = len(items_to_discard)
     
     return {
         "total_items": len(wardrobe_items),
         "items_to_discard": items_to_discard,
         "items_to_keep": items_to_keep,
-        "discard_count": len(items_to_discard),
+        "discard_count": discard_count,
         "keep_count": len(items_to_keep),
-        "summary": f"Recommend discarding {len(items_to_discard)} out of {len(wardrobe_items)} items"
+        "summary": f"Recommend discarding {discard_count} out of {len(wardrobe_items)} items"
     }
