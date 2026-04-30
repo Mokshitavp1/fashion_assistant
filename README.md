@@ -13,23 +13,6 @@ AI-powered wardrobe intelligence for outfit planning, shopping decisions, discar
 
 Fashion App combines a FastAPI backend, a React/Vite frontend, and computer-vision services to help users manage a wardrobe with less guesswork. The app classifies clothing, evaluates color and body-shape compatibility, recommends outfits, flags duplicate purchases, and surfaces items that are no longer pulling their weight.
 
-## Demo
-
-![Demo GIF](demo.gif)
-
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center"><img src="landing_page_design.jpg" alt="Landing page design" width="100%"><br><strong>Landing page</strong></td>
-    <td align="center"><img src="profile.jpg" alt="Profile screen" width="100%"><br><strong>Profile and wardrobe</strong></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="profile_shopping.jpg" alt="Shopping assistant screen" width="100%"><br><strong>Shopping assistant</strong></td>
-    <td align="center"><img src="profile_discard.jpg" alt="Discard analysis screen" width="100%"><br><strong>Discard analysis</strong></td>
-  </tr>
-</table>
-
 ## Architecture
 
 ```mermaid
@@ -130,7 +113,7 @@ The backend keeps the API thin and pushes the heavier image-processing work into
 - `backend/` contains the API, ML services, and database layer.
 - `frontend/` contains the React UI.
 - `legacy-mobile/` keeps the older mobile app code for reference.
-- `demo.gif` and the JPG assets at the repo root power the docs previews above.
+- The repo root includes a few sample image assets used for local testing.
 
 ## Contributing
 
