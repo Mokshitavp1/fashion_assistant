@@ -11,14 +11,17 @@ function Wardrobe() {
   const userId = localStorage.getItem('userId');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   const fetchWardrobe = useCallback(async () => {
     try {
       const r = await getWardrobe(userId);
       setItems(r.data.items);
+      setError('');
     } catch (e) {
       console.error(e);
+      setError(e.response?.data?.detail || 'Failed to load your wardrobe.');
     } finally {
       setLoading(false);
     }
@@ -34,7 +37,10 @@ function Wardrobe() {
     try {
       await deleteWardrobeItem(userId, id);
       setItems(items.filter(i => i.id !== id));
-    } catch { alert('Failed to delete item'); }
+    } catch (e) {
+      console.error('Failed to delete item', e);
+      setError(e.response?.data?.detail || 'Failed to delete item');
+    }
   };
 
   if (loading) {
@@ -44,6 +50,35 @@ function Wardrobe() {
         <div className="loader-wrap">
           <div className="loader-ring" />
           <p className="loader-text">Loading your wardrobe…</p>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <style>{sharedCSS}</style>
+        <div className="pg">
+          <nav className="pg-nav">
+            <div className="pg-nav-left">
+              <button className="pg-back" onClick={() => navigate('/dashboard')}>
+                <ArrowLeft size={13} /> Dashboard
+              </button>
+              <span className="pg-title">My Wardrobe</span>
+            </div>
+          </nav>
+          <div className="pg-body-narrow" style={{ textAlign: 'center', paddingTop: 60 }}>
+            <div className="wcard wcard-pad">
+              <AlertTriangle size={40} style={{ color: 'var(--terra)', margin: '0 auto 16px' }} />
+              <div style={{ fontFamily: 'Playfair Display,serif', fontSize: '1.2rem', marginBottom: 8 }}>Unable to load wardrobe</div>
+              <p style={{ color: 'var(--mid)', marginBottom: 18 }}>{error}</p>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                <button className="btn-p" onClick={() => { setLoading(true); fetchWardrobe(); }}>Retry</button>
+                <button className="btn-s" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
+              </div>
+            </div>
+          </div>
         </div>
       </>
     );
@@ -166,6 +201,7 @@ function AddModal({ userId, onClose, onSuccess }) {
   const [category, setCategory] = useState('top');
   const [season, setSeason] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   const handleImg = (e) => {
     const f = e.target.files[0];
@@ -173,13 +209,16 @@ function AddModal({ userId, onClose, onSuccess }) {
   };
 
   const handleSubmit = async () => {
-    if (!image) { alert('Please select an image'); return; }
-    setLoading(true);
+    if (!image) { setModalError('Please select an image'); return; }
+    setLoading(true); setModalError('');
     try {
       await addWardrobeItem(userId, image, category, season);
       onSuccess();
-    } catch { alert('Failed to add item'); }
-    finally { setLoading(false); }
+      setModalError('');
+    } catch (e) {
+      console.error('Failed to add item', e);
+      setModalError(e.response?.data?.detail || 'Failed to add item');
+    } finally { setLoading(false); }
   };
 
   return (
@@ -233,6 +272,7 @@ function AddModal({ userId, onClose, onSuccess }) {
               {loading ? 'Adding…' : 'Add Item'}
             </button>
           </div>
+          {modalError && <div style={{ marginTop: 10 }} className="alert-error">{modalError}</div>}
         </div>
       </div>
     </div>

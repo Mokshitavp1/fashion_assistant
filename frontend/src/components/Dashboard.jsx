@@ -8,15 +8,17 @@ function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const userId = localStorage.getItem('userId');
 
   const fetchUser = useCallback(async () => {
     try {
       const response = await getUser(userId);
       setUser(response.data);
+      setError('');
     } catch (error) {
       console.error('Error fetching user:', error);
-      navigate('/onboarding');
+      setError(error.response?.data?.detail || 'Unable to load your profile.');
     } finally {
       setLoading(false);
     }
@@ -36,10 +38,25 @@ function Dashboard() {
     return (
       <>
         <style>{sharedCSS}</style>
-        <div className="loader-wrap">
-          <div className="loader-ring" />
-          <p className="loader-text">Dressing up your dashboard…</p>
-        </div>
+        {error ? (
+          <div className="pg" style={{ textAlign: 'center', paddingTop: 60 }}>
+            <div className="loader-wrap">
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ fontSize: '1.1rem', fontFamily: 'Playfair Display,serif' }}>Oops — trouble loading profile</p>
+                <p style={{ color: 'var(--mid)', marginBottom: 14 }}>{error}</p>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                  <button className="btn-p" onClick={() => { setLoading(true); fetchUser(); }}>Retry</button>
+                  <button className="btn-s" onClick={() => navigate('/onboarding')}>Go to Onboarding</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="loader-wrap">
+            <div className="loader-ring" />
+            <p className="loader-text">Dressing up your dashboard…</p>
+          </div>
+        )}
       </>
     );
   }
