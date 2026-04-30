@@ -89,7 +89,9 @@ def get_color_temperature(rgb: tuple) -> str:
 def colors_are_complementary(rgb1: tuple, rgb2: tuple) -> bool:
     h1, s1, v1 = rgb_to_hsv(rgb1)
     h2, s2, v2 = rgb_to_hsv(rgb2)
-    return abs((h1 - h2 + 180) % 360 - 180) <= 30 
+    hue_distance = abs(h1 - h2)
+    hue_distance = min(hue_distance, 360 - hue_distance)
+    return abs(hue_distance - 180) <= 30 
 def colors_are_analogous(rgb1: tuple, rgb2: tuple) -> bool:
     h1, s1, v1 = rgb_to_hsv(rgb1)
     h2, s2, v2 = rgb_to_hsv(rgb2)
