@@ -74,6 +74,8 @@ The backend keeps the API thin and pushes the heavier image-processing work into
 
 ## Quick Start
 
+This repo used to include a GitHub Codespaces dev container, but that setup was removed after the billing change made it no longer worth keeping in the project.
+
 1. Create or update the backend environment file in `backend/.env`.
    - Set `SECRET_KEY`.
    - Set `DATABASE_URL`.
