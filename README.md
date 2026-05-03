@@ -117,8 +117,8 @@ GitHub Actions now runs frontend lint/test/build and backend tests on every push
 ## Project Structure
 
 - `backend/` contains the API, ML services, and database layer.
-- `frontend/` contains the React UI.
-- `legacy-mobile/` keeps the older mobile app code for reference.
+- `frontend/` contains the React UI (active product surface).
+- `legacy-mobile/` is an archived React Native scaffold maintained for reference only—not part of active development. See [legacy-mobile/README.md](legacy-mobile/README.md) for details.
 - `backend/tests/fixtures/images/` contains sample test assets (moved from repo root for organization).
 
 ## Contributing
