@@ -119,7 +119,7 @@ GitHub Actions now runs frontend lint/test/build and backend tests on every push
 - `backend/` contains the API, ML services, and database layer.
 - `frontend/` contains the React UI.
 - `legacy-mobile/` keeps the older mobile app code for reference.
-- The repo root includes a few sample image assets used for local testing.
+- `backend/tests/fixtures/images/` contains sample test assets (moved from repo root for organization).
 
 ## Contributing
 
