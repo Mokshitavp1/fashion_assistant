@@ -110,6 +110,10 @@ This repo used to include a GitHub Codespaces dev container, but that setup was 
 - Frontend lint: `cd frontend && npm run lint`
 - Frontend build: `cd frontend && npm run build`
 
+## CI/CD
+
+GitHub Actions now runs frontend lint/test/build and backend tests on every push and pull request. Pushes to `main` also package a frontend build artifact and a backend container image for release delivery.
+
 ## Project Structure
 
 - `backend/` contains the API, ML services, and database layer.
