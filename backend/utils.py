@@ -1,7 +1,8 @@
 """Shared utility functions."""
 
 from typing import Any, Dict, Union
-from fastapi import Request
+
+from fastapi import HTTPException, Request
 from slowapi.util import get_remote_address as slowapi_get_remote_address
 import jwt
 from config import SECRET_KEY, ALGORITHM
@@ -175,14 +176,26 @@ async def run_bounded_image_job(job_name: str, func, *args, **kwargs) -> Any:
     import asyncio
     from fastapi.concurrency import run_in_threadpool
     
+    acquire_timeout_seconds = float(kwargs.pop("acquire_timeout_seconds", 0.2))
+    
     semaphore = getattr(run_bounded_image_job, '_semaphore', None)
     if semaphore is None:
         semaphore = asyncio.Semaphore(MAX_CONCURRENT_IMAGE_JOBS)
         run_bounded_image_job._semaphore = semaphore
     
-    async with semaphore:
+    try:
+        await asyncio.wait_for(semaphore.acquire(), timeout=acquire_timeout_seconds)
+    except asyncio.TimeoutError as exc:
+        logger.warning("Service busy for image job: %s", job_name)
+        raise HTTPException(
+            status_code=503,
+            detail="Service is busy processing other image jobs. Please retry shortly.",
+            headers={"Retry-After": "5"},
+        ) from exc
+
+    try:
         logger.debug("Starting image job: %s", job_name)
-        try:
-            return await run_in_threadpool(func, *args, **kwargs)
-        finally:
-            logger.debug("Finished image job: %s", job_name)
+        return await run_in_threadpool(func, *args, **kwargs)
+    finally:
+        semaphore.release()
+        logger.debug("Finished image job: %s", job_name)

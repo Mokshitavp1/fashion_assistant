@@ -99,7 +99,7 @@ async def register(
             email=user_data.email,
             detail="Email already registered"
         )
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise crud.DuplicateEmailError("Email already registered")
 
     password_hash = hash_password(user_data.password)
 
@@ -243,7 +243,7 @@ async def verify_email(
             "failure",
             detail="Invalid verification token"
         )
-        raise HTTPException(status_code=400, detail="Invalid verification token")
+        raise crud.ValidationError("Invalid verification token")
 
     if user.email_verification_expires_at and user.email_verification_expires_at < datetime.utcnow():
         audit_auth_event(
@@ -253,7 +253,7 @@ async def verify_email(
             user_id=user.id,
             detail="Verification token expired"
         )
-        raise HTTPException(status_code=400, detail="Verification token expired")
+        raise crud.ValidationError("Verification token expired")
 
     crud.mark_email_verified(db, user.id)
     
@@ -291,7 +291,7 @@ async def resend_verification(
     user = crud.get_user_by_email(db, data.email)
 
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise crud.UserNotFoundError("User not found")
 
     if user.email_verified:
         return EmailVerificationResponse(
@@ -570,11 +570,11 @@ async def confirm_password_reset(
         user_id = payload.get("user_id")
 
         if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid reset token")
+            raise crud.ValidationError("Invalid reset token")
 
         user = crud.get_user_by_id(db, user_id)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise crud.UserNotFoundError("User not found")
 
         password_hash = hash_password(data.new_password)
         crud.update_user_password(db, user_id, password_hash)
@@ -591,8 +591,10 @@ async def confirm_password_reset(
 
     except HTTPException:
         raise
+    except crud.CRUDException:
+        raise
     except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+        raise crud.ValidationError("Invalid or expired reset token")
 
 
 def _send_password_reset_email(email: str, reset_token: str) -> None:

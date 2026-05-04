@@ -13,6 +13,7 @@ import smtplib
 import re
 import secrets
 import uuid
+import time
 from email.message import EmailMessage
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, Tuple
@@ -59,8 +60,10 @@ from services.secure_image_storage import (
     cleanup_old_images
 )
 from services.task_queue import enqueue_inference_job, fetch_job, get_job_owner, get_job_type
+from services.observability import log_event, setup_structured_logging
 
 logger = logging.getLogger(__name__)
+setup_structured_logging()
 
 
 def audit_auth_event(
@@ -131,6 +134,7 @@ SMTP_FROM_ADDRESS = os.getenv("SMTP_FROM_ADDRESS", SMTP_USERNAME).strip()
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").strip().lower() in {"1", "true", "yes", "on"}
 MAX_CONCURRENT_IMAGE_JOBS = int(os.getenv("MAX_CONCURRENT_IMAGE_JOBS", "4"))
 IMAGE_JOB_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_IMAGE_JOBS)
+IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS = float(os.getenv("IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS", "0.2"))
 INFERENCE_QUEUE_ENABLED = os.getenv(
     "INFERENCE_QUEUE_ENABLED",
     "false" if IS_DEV_ENV else "true",
@@ -139,12 +143,29 @@ INFERENCE_QUEUE_ENABLED = os.getenv(
 
 async def run_bounded_image_job(job_name: str, func, *args, **kwargs):
     """Run CPU-heavy image work in a bounded worker pool to protect event loop latency."""
-    async with IMAGE_JOB_SEMAPHORE:
+    try:
+        await asyncio.wait_for(IMAGE_JOB_SEMAPHORE.acquire(), timeout=IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS)
+    except asyncio.TimeoutError as exc:
+        log_event(
+            logger,
+            logging.WARNING,
+            "image_job_busy",
+            error_type="ServiceBusyError",
+            error_detail=job_name,
+            message=f"Image worker pool saturated for job {job_name}",
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Service is busy processing image jobs. Please retry shortly.",
+            headers={"Retry-After": "5"},
+        ) from exc
+
+    try:
         logger.debug("Starting image job: %s", job_name)
-        try:
-            return await run_in_threadpool(func, *args, **kwargs)
-        finally:
-            logger.debug("Finished image job: %s", job_name)
+        return await run_in_threadpool(func, *args, **kwargs)
+    finally:
+        IMAGE_JOB_SEMAPHORE.release()
+        logger.debug("Finished image job: %s", job_name)
 
 
 def _analyze_skin_tone(image_array: np.ndarray) -> Tuple[Tuple[int, int, int], str]:
@@ -385,16 +406,118 @@ ensure_auth_schema()
 
 app = FastAPI(title="Fashion App API", version="1.0.0")
 
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or uuid.uuid4().hex
+    request.state.request_id = request_id
+    started_at = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        duration_ms = (time.perf_counter() - started_at) * 1000
+        log_event(
+            logger,
+            logging.ERROR,
+            "http_request_failed",
+            request_id=request_id,
+            method=request.method,
+            path=request.url.path,
+            duration_ms=duration_ms,
+            client_ip=get_remote_address(request),
+            error_type=type(exc).__name__,
+            error_detail=str(exc),
+        )
+        raise
+
+    duration_ms = (time.perf_counter() - started_at) * 1000
+    response.headers["X-Request-ID"] = request_id
+    log_event(
+        logger,
+        logging.INFO,
+        "http_request_complete",
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration_ms=duration_ms,
+        client_ip=get_remote_address(request),
+    )
+    return response
+
 # Rate limiting
 limiter = Limiter(key_func=get_rate_limit_key)
 app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    request_id = getattr(getattr(request, "state", None), "request_id", None)
+    log_event(
+        logger,
+        logging.WARNING,
+        "rate_limit_exceeded",
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        client_ip=get_remote_address(request),
+        error_type=type(exc).__name__,
+        error_detail=str(exc),
+    )
     return JSONResponse(
         status_code=429,
-        content={"detail": "Too many requests. Please try again later."}
+        content={"detail": "Too many requests. Please try again later."},
+        headers={"Retry-After": "60"},
     )
+
+
+@app.exception_handler(crud.CRUDException)
+async def crud_exception_handler(request: Request, exc: crud.CRUDException):
+    status_code = 500
+    detail = str(exc)
+
+    if isinstance(exc, (crud.ValidationError,)):
+        status_code = 400
+    elif isinstance(exc, (crud.AuthorizationError,)):
+        status_code = 403
+    elif isinstance(exc, (crud.UserNotFoundError,)):
+        status_code = 404
+    elif isinstance(exc, (crud.DuplicateEmailError,)):
+        status_code = 409
+    elif isinstance(exc, (crud.DatabaseError,)):
+        status_code = 503
+
+    request_id = getattr(getattr(request, "state", None), "request_id", None)
+    log_event(
+        logger,
+        logging.ERROR if status_code >= 500 else logging.WARNING,
+        "crud_exception",
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        status_code=status_code,
+        client_ip=get_remote_address(request),
+        error_type=type(exc).__name__,
+        error_detail=detail,
+    )
+    return JSONResponse(status_code=status_code, content={"detail": detail})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = getattr(getattr(request, "state", None), "request_id", None)
+    log_event(
+        logger,
+        logging.ERROR,
+        "unhandled_exception",
+        request_id=request_id,
+        method=request.method,
+        path=request.url.path,
+        client_ip=get_remote_address(request),
+        error_type=type(exc).__name__,
+        error_detail=str(exc),
+    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 # CORS - Restrict to specific origins
 app.add_middleware(

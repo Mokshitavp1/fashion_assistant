@@ -151,6 +151,13 @@ This backend is a FastAPI app with JWT auth, image processing, and SQLAlchemy.
 - Security-relevant auth events are logged with structured payloads under `AUTH_AUDIT`.
 - Events include register, login, refresh, logout, logout-all, session listing/revocation, and password reset flows.
 
+### 6) Production request logging and overload handling
+
+- Every request now gets a request ID and a structured JSON log entry with method, path, status, duration, and client IP.
+- Custom CRUD exceptions are translated centrally so `ValidationError`, `DuplicateEmailError`, `UserNotFoundError`, `AuthorizationError`, and `DatabaseError` produce consistent HTTP responses.
+- Heavy image-processing paths fail fast with `503 Service Unavailable` and `Retry-After` when the worker pool is saturated, instead of letting requests hang indefinitely.
+- If you are debugging a production issue, search logs by `request_id` first.
+
 ## Useful Commands
 
 From workspace root:
