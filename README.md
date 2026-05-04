@@ -104,6 +104,41 @@ This repo used to include a GitHub Codespaces dev container, but that setup was 
 
 5. Open the app in your browser and create a wardrobe profile.
 
+## Documentation
+
+### Architecture & Decisions
+
+- **[Architectural Decisions (ADRs)](ARCHITECTURAL_DECISIONS.md)** — Key decisions: FastAPI + React, modular backend, JWT + sessions, vision services layer, etc.
+- **[Architecture Diagram](#architecture)** — Data flow and service communication
+
+### Code Quality & Refactoring
+
+- **[Code Quality Refactoring](CODE_QUALITY_REFACTORING.md)** — How we transformed 1770-line monolith into 12 focused modules with 100% type hints
+- **[Refactored Codebase Guide](REFACTORED_CODEBASE_GUIDE.md)** — How to add endpoints, patterns, examples
+- **[Code Quality Summary](CODE_QUALITY_SUMMARY.md)** — Overview and checklist
+
+### Deployment
+
+- **[Production Deployment Runbook](PRODUCTION_DEPLOYMENT_RUNBOOK.md)** — Step-by-step guide: pre-deployment checklist, infrastructure setup (Heroku/AWS/DigitalOcean), database migration, backend/frontend deployment, monitoring, rollback
+- **[Free No-Card Deployment](DEPLOYMENT_FREE_NO_CARD.md)** — Deploy to Cloudflare Pages + Hugging Face Spaces + Neon Postgres without a credit card
+- **[Docker Setup](DOCKER_SETUP.md)** — Local development with docker-compose
+
+### Testing & Learning
+
+- **[Test Coverage Fix](TEST_COVERAGE_FIX.md)** — How we fixed pytest.ini and added GitHub Actions CI/CD
+- **[Learning System Setup](LEARNING_SYSTEM_SETUP.md)** — ML model training and feedback loops
+
+### API Documentation
+
+- **Live Swagger Docs:** Run the backend and visit `http://localhost:8000/docs`
+- **ReDoc:** `http://localhost:8000/redoc`
+
+### Other Resources
+
+- **[Contributing Guidelines](CONTRIBUTING.md)** — How to contribute
+- **[Security & Privacy](SECURITY_PRIVACY.md)** — Security measures and privacy policy
+- **[Legacy Mobile](legacy-mobile/README.md)** — Reference-only React Native scaffold
+
 ## Free Public Demo
 
 The best no-card deployment for this repo is a split setup with one public URL:
