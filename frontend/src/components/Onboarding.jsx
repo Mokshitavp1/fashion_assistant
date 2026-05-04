@@ -5,6 +5,7 @@ import { createUser, analyzeUser, loginUser, confirmEmailVerification, resendEma
 import Notification from './Notification';
 
 const GMAIL_PATTERN = /^[a-z0-9](?:[a-z0-9._%+-]{0,61}[a-z0-9])?@gmail\.com$/i;
+const EMAIL_VERIFICATION_REQUIRED = (import.meta.env.VITE_EMAIL_VERIFICATION_REQUIRED ?? 'true').toString().trim().toLowerCase() !== 'false';
 
 const isValidGmailAddress = (value) => {
   const email = (value || '').trim().toLowerCase();
@@ -536,12 +537,22 @@ function Onboarding() {
         navigate('/dashboard');
         return;
       }
-      if (!isValidGmailAddress(email)) {
+      if (EMAIL_VERIFICATION_REQUIRED && !isValidGmailAddress(email)) {
         throw new Error('Email not valid. Please use a real Gmail address.');
       }
       const userResponse = await createUser(name, email, password);
-      setVerificationPending(true);
       setVerificationEmail(userResponse.data?.email || email);
+      if (userResponse.data?.email_verification_required === false) {
+        setVerificationPending(false);
+        setVerificationToken('');
+        setVerificationMessage(userResponse.data?.detail || 'Account created. Signing you in now...');
+        const loginResponse = await loginUser(email, password);
+        await analyzeUser(loginResponse.data.user_id, image, parseFloat(height), parseFloat(weight));
+        navigate('/dashboard');
+        return;
+      }
+
+      setVerificationPending(true);
       setVerificationToken(userResponse.data?.verification_token || '');
       setVerificationMessage(userResponse.data?.detail || 'Check your Gmail for the confirmation code.');
     } catch (err) {
@@ -717,7 +728,7 @@ function Onboarding() {
                   <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 chars, upper/lowercase & number" />
                 </div>
                 <button className="btn-primary" onClick={() => {
-                  if (!isValidGmailAddress(email)) {
+                  if (EMAIL_VERIFICATION_REQUIRED && !isValidGmailAddress(email)) {
                     setError('Email not valid. Please use a real Gmail address.');
                     return;
                   }

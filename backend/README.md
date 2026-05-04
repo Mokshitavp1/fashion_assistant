@@ -54,6 +54,11 @@ This backend is a FastAPI app with JWT auth, image processing, and SQLAlchemy.
   - Seconds to keep completed/failed job results.
   - Default: `3600`
 
+- `EMAIL_VERIFICATION_REQUIRED`
+  - When `true`, new accounts must confirm a verification code before login.
+  - Set to `false` for no-card public demos that do not have SMTP configured.
+  - Default: `true`
+
 - `DB_POOL_SIZE`
   - SQLAlchemy connection pool size for MySQL/PostgreSQL.
   - Default: `10`
@@ -188,6 +193,7 @@ Suggested production env baseline:
 - `DB_POOL_TIMEOUT=30`
 - `DB_POOL_RECYCLE=1800`
 - `MAX_CONCURRENT_IMAGE_JOBS=8`
+- `EMAIL_VERIFICATION_REQUIRED=false` for free demo deployments without SMTP
 
 ## Train A Clothing Classifier
 

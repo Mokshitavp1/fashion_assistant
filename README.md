@@ -104,6 +104,37 @@ This repo used to include a GitHub Codespaces dev container, but that setup was 
 
 5. Open the app in your browser and create a wardrobe profile.
 
+## Free Public Demo
+
+The best no-card deployment for this repo is a split setup with one public URL:
+
+- Frontend: Cloudflare Pages or GitHub Pages
+- Backend API: Hugging Face Spaces Docker Space
+- Database: Neon free Postgres
+
+That keeps the app accessible from the repo without requiring visitors to clone it, and it avoids free-tier providers that ask for a credit card.
+
+For the public demo, set these backend env vars on the host:
+
+- `ENV=production`
+- `SECRET_KEY=<strong random value>`
+- `DATABASE_URL=<free Postgres connection string>`
+- `ALLOWED_ORIGINS=<your frontend URL>`
+- `EMAIL_VERIFICATION_REQUIRED=false`
+
+For the frontend build, set:
+
+- `VITE_API_BASE_URL=<your backend URL>`
+- `VITE_EMAIL_VERIFICATION_REQUIRED=false`
+
+Recommended demo behavior:
+
+- Keep Redis/Celery optional unless your host can run them reliably for free.
+- Seed or document a simple demo path so first-time visitors can try the app immediately.
+- If you keep user sign-up enabled, the backend can auto-verify accounts in demo mode so SMTP is not required.
+
+Full setup notes are in [DEPLOYMENT_FREE_NO_CARD.md](DEPLOYMENT_FREE_NO_CARD.md).
+
 ## Validation
 
 - Backend tests: `python -m pytest -q backend`
@@ -130,4 +161,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, workflow, and pull request gui
 - [Quickstart](QUICKSTART.md)
 - [Backend setup guide](backend/README.md)
 - [Docker setup](DOCKER_SETUP.md)
+- [Free no-card deployment guide](DEPLOYMENT_FREE_NO_CARD.md)
 - [Privacy and security notes](SECURITY_PRIVACY.md)

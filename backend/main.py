@@ -108,6 +108,7 @@ ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://localhost:5173"
 ).split(",")
+EMAIL_VERIFICATION_REQUIRED = os.getenv("EMAIL_VERIFICATION_REQUIRED", "true").strip().lower() not in {"false", "0", "no", "off"}
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY or len(SECRET_KEY) < 32:
     raise RuntimeError(
@@ -654,6 +655,15 @@ async def register(
         password_hash=hash_password(user_data.password),
     )
 
+    if not EMAIL_VERIFICATION_REQUIRED:
+        crud.mark_email_verified(db, user.id)
+        audit_auth_event("register", request, "success", user_id=user.id, email=user.email)
+        return {
+            "detail": "Account created. Email verification is disabled for this deployment.",
+            "email_verification_required": False,
+            "email": user.email,
+        }
+
     verification_token, token_hash, expires_at = create_email_verification_token()
     crud.set_email_verification_token(db, user.id, token_hash, expires_at)
     try:
@@ -744,6 +754,14 @@ async def resend_verification_email(
     db: Session = Depends(get_db),
 ):
     """Generate a fresh verification token for an unverified account."""
+    if not EMAIL_VERIFICATION_REQUIRED:
+        audit_auth_event("resend_verification", request, "success", email=resend_data.email, detail="verification_disabled")
+        return {
+            "detail": "Email verification is disabled for this deployment.",
+            "email_verification_required": False,
+            "email": resend_data.email,
+        }
+
     user = crud.get_user_by_email(db, resend_data.email)
     if not user:
         audit_auth_event("resend_verification", request, "success", email=resend_data.email, detail="user_not_found")
