@@ -158,6 +158,12 @@ This backend is a FastAPI app with JWT auth, image processing, and SQLAlchemy.
 - Heavy image-processing paths fail fast with `503 Service Unavailable` and `Retry-After` when the worker pool is saturated, instead of letting requests hang indefinitely.
 - If you are debugging a production issue, search logs by `request_id` first.
 
+### 7) Dashboard and incident response
+
+- Metrics and alerts are documented in [MONITORING_DASHBOARD.md](../MONITORING_DASHBOARD.md).
+- Incident triage, rollback, and escalation steps are documented in [INCIDENT_RESPONSE_RUNBOOK.md](../INCIDENT_RESPONSE_RUNBOOK.md).
+- Use `/admin/metrics/models` and `/admin/metrics/feedback-volume` as the first source of truth for learning-system health.
+
 ## Useful Commands
 
 From workspace root:

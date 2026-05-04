@@ -127,6 +127,11 @@ This repo used to include a GitHub Codespaces dev container, but that setup was 
 - **[Refactored Codebase Guide](REFACTORED_CODEBASE_GUIDE.md)** — How to add endpoints, patterns, examples
 - **[Code Quality Summary](CODE_QUALITY_SUMMARY.md)** — Overview and checklist
 
+### Operations & Monitoring
+
+- **[Monitoring Dashboard Specification](MONITORING_DASHBOARD.md)** — What to chart, alert thresholds, and how to use the existing metrics endpoints
+- **[Incident Response Runbook](INCIDENT_RESPONSE_RUNBOOK.md)** — Triage, rollback, and communication steps for outages and model regressions
+
 ### Deployment
 
 - **[Production Deployment Runbook](PRODUCTION_DEPLOYMENT_RUNBOOK.md)** — Step-by-step guide: pre-deployment checklist, infrastructure setup (Heroku/AWS/DigitalOcean), database migration, backend/frontend deployment, monitoring, rollback
