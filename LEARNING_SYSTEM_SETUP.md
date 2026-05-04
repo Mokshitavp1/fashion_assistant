@@ -15,9 +15,11 @@ Your fashion app can now collect user feedback and improve recommendations over 
 - **CRUD Operations**: Full database access layer for feedback
 - **API Client**: Frontend functions to call feedback endpoints
 
-### Phase 5: Skeleton (Ready to extend) 
+### Phase 5: Optional Operational Layer (Skeleton Ready to Extend)
 - **Metrics Service**: Placeholder functions to evaluate model performance
 - **Retraining Pipeline**: Skeleton Celery tasks for continuous improvement
+
+This phase is intentionally optional infrastructure. The core app works without it, and the learning system is only enabled when you want feedback-driven improvement in production or a richer demo.
 
 ---
 

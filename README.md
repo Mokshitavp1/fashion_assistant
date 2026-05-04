@@ -72,6 +72,16 @@ The backend keeps the API thin and pushes the heavier image-processing work into
 - Discard analysis for low-value items
 - Authenticated user sessions and refresh-token management
 
+## Product Scope
+
+This repo has three intentionally different kinds of work so the roadmap stays readable:
+
+- **Core product:** wardrobe, outfit, shopping, discard, and auth flows are the active product surface.
+- **Supporting platform:** feedback collection, metrics, and model retraining are enabled, but they are gated by data volume and infrastructure rather than treated as separate user-facing products.
+- **Archived reference:** `legacy-mobile/` is preserved for historical context only and is not part of current delivery.
+
+Operationally, Redis/Celery and the learning pipeline are optional deployment capabilities for smaller hosts, not a sign that the product is unstable or half-finished.
+
 ## Quick Start
 
 This repo used to include a GitHub Codespaces dev container, but that setup was removed after the billing change made it no longer worth keeping in the project.
