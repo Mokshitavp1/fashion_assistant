@@ -10,7 +10,6 @@ This service handles:
 """
 
 import logging
-import json
 from datetime import datetime
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -19,6 +18,12 @@ from database import crud, models
 from services.model_metrics import (
     evaluate_outfit_accuracy, 
     evaluate_recommendation_helpful_rate
+)
+from services.model_registry import (
+    get_active_model_version,
+    promote_model_version,
+    record_experiment,
+    register_model_version,
 )
 
 logger = logging.getLogger(__name__)
@@ -259,6 +264,21 @@ def evaluate_and_improve(
             improvement_estimated = 0.02
         
         should_deploy = improvement_estimated >= accuracy_threshold
+
+        active_version = get_active_model_version(old_model)
+        candidate_version = str(new_model_checkpoint.get("version", datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
+        record_experiment(
+            model_name=old_model,
+            control_version=active_version or "baseline",
+            candidate_version=candidate_version,
+            metrics={
+                "baseline_accuracy": old_accuracy,
+                "estimated_improvement": improvement_estimated,
+                "threshold": accuracy_threshold,
+            },
+            decision="promote" if should_deploy else "reject",
+            notes=new_model_checkpoint.get("improvement"),
+        )
         
         if should_deploy:
             logger.info(f"✓ New {old_model} model shows {improvement_estimated:.1%} improvement (threshold: {accuracy_threshold:.1%}), approving deployment")
@@ -292,6 +312,7 @@ def deploy_model_if_improved(
     logger.info(f"Deploying new {model_name} model...")
     
     version = new_checkpoint.get("version", datetime.utcnow().strftime("%Y%m%d_%H%M%S"))
+    artifact_path = new_checkpoint.get("artifact_path")
     
     try:
         # In production, would:
@@ -303,6 +324,25 @@ def deploy_model_if_improved(
         # For now, log the deployment event and store version
         logger.info(f"Updating {model_name} to version {version}")
         
+        # Register the version in the persistent model registry before activation.
+        register_model_version(
+            model_name=model_name,
+            version=version,
+            parent_version=get_active_model_version(model_name),
+            artifact_path=artifact_path,
+            training_summary={
+                "samples_used": new_checkpoint.get("samples_used"),
+                "improvement": new_checkpoint.get("improvement"),
+                "trained_at": new_checkpoint.get("trained_at"),
+            },
+            metrics={
+                "kept_items": new_checkpoint.get("kept_items"),
+                "discarded_items": new_checkpoint.get("discarded_items"),
+                "worn_items": new_checkpoint.get("worn_items"),
+                "helpful_rate": new_checkpoint.get("helpful_rate"),
+            },
+        )
+
         # Record version in metrics
         try:
             crud.create_model_metric(
@@ -322,8 +362,11 @@ def deploy_model_if_improved(
             "version": version,
             "samples_used": new_checkpoint.get("samples_used"),
             "deployed_at": datetime.utcnow().isoformat(),
-            "improvement": new_checkpoint.get("improvement", "N/A")
+            "improvement": new_checkpoint.get("improvement", "N/A"),
+            "artifact_path": artifact_path,
         }
+
+        promote_model_version(model_name, version)
         
         logger.info(f"✓ Model deployed successfully: {deployment_info}")
         
@@ -333,7 +376,8 @@ def deploy_model_if_improved(
             "version": version,
             "deployed_at": datetime.utcnow(),
             "samples_used": new_checkpoint.get("samples_used"),
-            "info": new_checkpoint.get("improvement")
+            "info": new_checkpoint.get("improvement"),
+            "artifact_path": artifact_path,
         }
         
     except Exception as e:
@@ -381,32 +425,41 @@ def retrain_all_models(
     results = {
         "start_time": datetime.utcnow(),
         "total_feedback": total_feedback,
-        "models_updated": []
+        "models_updated": [],
+        "registry_updates": [],
     }
     
     # Retrain color harmony
     new_color_model = retrain_color_harmony_rules(db, feedback_data)
     if new_color_model:
         if evaluate_and_improve(db, "color_harmony", new_color_model):
-            deploy_model_if_improved(db, "color_harmony", new_color_model)
+            deployment = deploy_model_if_improved(db, "color_harmony", new_color_model)
+            results["registry_updates"].append(deployment)
             results["models_updated"].append("color_harmony")
     
     # Retrain clothing classifier
     new_classifier = retrain_clothing_classifier(db, feedback_data)
     if new_classifier:
         if evaluate_and_improve(db, "clothing_classifier", new_classifier):
-            deploy_model_if_improved(db, "clothing_classifier", new_classifier)
+            deployment = deploy_model_if_improved(db, "clothing_classifier", new_classifier)
+            results["registry_updates"].append(deployment)
             results["models_updated"].append("clothing_classifier")
     
     # Retrain body shape detection
     new_body_shape = retrain_body_shape_detection(db, feedback_data)
     if new_body_shape:
         if evaluate_and_improve(db, "body_shape", new_body_shape):
-            deploy_model_if_improved(db, "body_shape", new_body_shape)
+            deployment = deploy_model_if_improved(db, "body_shape", new_body_shape)
+            results["registry_updates"].append(deployment)
             results["models_updated"].append("body_shape")
     
     results["end_time"] = datetime.utcnow()
     results["status"] = "complete"
+
+    if not results["models_updated"]:
+        results["rollback_recommended"] = True
+    else:
+        results["rollback_recommended"] = False
     
     logger.info(f"Retraining complete: Updated {len(results['models_updated'])} models")
     return results

@@ -235,3 +235,21 @@ debug fields in wardrobe responses: `model_confidence`, `confidence_threshold`, 
 
 Note: some general-purpose vision checkpoints are not fashion-specialized. If labels are generic,
 consider a fashion-specific checkpoint later for better category/pattern accuracy.
+
+## Model Management
+
+Weekly retraining is orchestrated by Celery through `services/model_retrainer.py`, and retraining
+events are now persisted in `backend/model_artifacts/model_registry.json` with lineage and
+experiment logs in `backend/model_artifacts/model_lineage.jsonl` and
+`backend/model_artifacts/model_experiments.jsonl`.
+
+- Each retrain produces a versioned record with parent version, timestamps, and training summary.
+- New versions are promoted only after an evaluation step records the control vs candidate result.
+- Rollback uses the registry’s previous-version pointer, so the last active model can be restored.
+- Training data lineage is captured as append-only JSONL events for auditing and traceability.
+
+Operational notes:
+
+- The retrainer is part of the active Celery workflow and is not just a planned stub.
+- If you need to inspect the active model version, check `backend/model_artifacts/model_registry.json`.
+- If you need to revert, use the registry history to restore the prior active version before promoting it again.
