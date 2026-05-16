@@ -91,6 +91,7 @@ export const loginUser = async (email, password) => {
   const formData = new FormData();
   formData.append('email', email);
   formData.append('password', password);
+
   const response = await api.post('/auth/login', formData);
   persistAuthTokens(response.data);
   return response;
