@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "jsx": "react-jsx",
+        "strict": false,
+        "noImplicitAny": false,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "baseUrl": "."
+    },
+    "include": [
+        "App.tsx",
+        "components/**/*.ts",
+        "components/**/*.tsx",
+        "constants/**/*.ts",
+        "hooks/**/*.ts",
+        "lib/**/*.ts",
+        "screens/**/*.tsx",
+        "stores/**/*.ts",
+        "types/**/*.ts",
+        "types/**/*.d.ts",
+        "utils/**/*.ts"
+    ],
+    "exclude": [
+        "backend",
+        "frontend",
+        "node_modules"
+    ]
+}

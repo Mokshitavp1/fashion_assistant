@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --terra: #b08a56;
+  --white: #fff9fb;
+  --pink: #e9c7d2;
+  --carnation: #dfa7bb;
+  --peach: #f4efef;
+  --dark: #3a2f35;
+  --mid: #6d5863;
+  --bg-base: #f4efef;
+  --mauve: #b88fa4;
+  --wallpaper-url: url('/patterns/bows.jpg');
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-base);
+  background-image:
+    linear-gradient(140deg, rgba(255, 249, 251, 0.68), rgba(233, 199, 210, 0.2)),
+    var(--wallpaper-url);
+  background-size: 100% 100%, 360px auto;
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed, fixed;
+  color: var(--dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
