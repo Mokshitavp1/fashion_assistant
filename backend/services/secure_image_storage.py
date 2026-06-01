@@ -23,6 +23,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 import cv2
 import numpy as np
+from utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ def store_encrypted_image(
     meta_content = f"""id:{image_id}
 user_id:{user_id}
 type:{image_type}
-uploaded_at:{datetime.utcnow().isoformat()}
+    uploaded_at:{utcnow().isoformat()}
 size:{len(image_bytes)}
 hash:{hashlib.sha256(image_bytes).hexdigest()[:16]}
 """
@@ -241,7 +242,7 @@ def cleanup_old_images(before_date: Optional[datetime] = None) -> int:
         Number of images deleted
     """
     if before_date is None:
-        before_date = datetime.utcnow() - timedelta(days=MAX_IMAGE_AGE_DAYS)
+        before_date = utcnow() - timedelta(days=MAX_IMAGE_AGE_DAYS)
     
     deleted_count = 0
     try:

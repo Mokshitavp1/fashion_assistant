@@ -13,6 +13,7 @@ import httpx
 import main
 from database.database import SessionLocal
 from database import models
+from utils import utcnow
 
 
 BASE_URL = os.getenv("LOAD_BASE_URL", "http://127.0.0.1:8000")
@@ -50,7 +51,7 @@ def _percentile(values: List[float], percentile: float) -> float:
 
 def _create_or_get_users(user_count: int) -> List[Tuple[int, str]]:
     users: List[Tuple[int, str]] = []
-    run_tag = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    run_tag = utcnow().strftime("%Y%m%d%H%M%S")
     db = SessionLocal()
     try:
         for i in range(user_count):
@@ -212,7 +213,7 @@ async def main_async() -> int:
                 "analyze_rounds": ANALYZE_ROUNDS,
                 "wardrobe_rounds": WARDROBE_ROUNDS,
                 "max_inflight": MAX_INFLIGHT,
-                "timestamp_utc": datetime.utcnow().isoformat(),
+                "timestamp_utc": utcnow().isoformat(),
             },
             indent=2,
         )

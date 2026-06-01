@@ -36,6 +36,7 @@ from auth_utils import (
 )
 from config import EMAIL_VERIFICATION_REQUIRED
 from utils import audit_auth_event, verify_user_ownership
+from utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +246,7 @@ async def verify_email(
         )
         raise crud.ValidationError("Invalid verification token")
 
-    if user.email_verification_expires_at and user.email_verification_expires_at < datetime.utcnow():
+    if user.email_verification_expires_at and user.email_verification_expires_at < utcnow():
         audit_auth_event(
             "verify_email",
             request,

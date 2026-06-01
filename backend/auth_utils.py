@@ -30,6 +30,7 @@ from config import (
     SMTP_USE_TLS,
 )
 from database import crud
+from utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ def create_email_verification_token() -> Tuple[str, str, datetime]:
         raw_token.encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
-    expires_at = datetime.utcnow() + timedelta(hours=EMAIL_VERIFICATION_EXPIRATION_HOURS)
+    expires_at = utcnow() + timedelta(hours=EMAIL_VERIFICATION_EXPIRATION_HOURS)
     return raw_token, token_hash, expires_at
 
 
@@ -184,7 +185,7 @@ def create_token(user_id: int, token_type: str, expires_delta: timedelta) -> Dic
     Returns:
         Token payload dictionary
     """
-    now = datetime.utcnow()
+    now = utcnow()
     expire = now + expires_delta
     return {
         "sub": str(user_id),

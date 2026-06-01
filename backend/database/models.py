@@ -31,6 +31,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 import re
+from utils import utcnow
 
 
 class User(Base):
@@ -54,15 +55,15 @@ class User(Base):
     bmi = Column(Float, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     
     # Relationships
     wardrobe_items = relationship("WardrobeItem", back_populates="user", cascade="all, delete-orphan")
     outfits = relationship("Outfit", back_populates="user", cascade="all, delete-orphan")
     refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
-    outfit_ratings = relationship("OutfitRating", cascade="all, delete-orphan")
-    recommendation_feedback = relationship("RecommendationFeedback", cascade="all, delete-orphan")
-    item_usage = relationship("ItemUsage", cascade="all, delete-orphan")
+    outfit_ratings = relationship("OutfitRating", cascade="all, delete-orphan", overlaps="user")
+    recommendation_feedback = relationship("RecommendationFeedback", cascade="all, delete-orphan", overlaps="user")
+    item_usage = relationship("ItemUsage", cascade="all, delete-orphan", overlaps="user")
 
 
 class WardrobeItem(Base):
@@ -70,7 +71,7 @@ class WardrobeItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     image_path = Column(String, nullable=False)
     clothing_type = Column(String, nullable=False)
@@ -88,7 +89,7 @@ class Outfit(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     name = Column(String, nullable=False)
     occasion = Column(String, nullable=True)
@@ -110,7 +111,7 @@ class RefreshToken(Base):
     ip_address = Column(String(64), nullable=True)
     revoked_reason = Column(String(100), nullable=True)
     replaced_by_jti = Column(String(64), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     user = relationship("User", back_populates="refresh_tokens")
 
@@ -124,9 +125,9 @@ class OutfitRating(Base):
     outfit_id = Column(Integer, ForeignKey("outfits.id"), nullable=False, index=True)
     rating = Column(Integer, nullable=False)  # 1-5 scale
     comment = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
 
-    user = relationship("User")
+    user = relationship("User", overlaps="outfit_ratings")
     outfit = relationship("Outfit")
 
 
@@ -139,9 +140,9 @@ class RecommendationFeedback(Base):
     recommendation_type = Column(String(50), nullable=False)  # "outfit" | "shopping" | "discard"
     recommendation_id = Column(String(255), nullable=False)  # ID of the specific recommendation
     helpful = Column(Integer, nullable=False)  # 1 for yes, 0 for no
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
 
-    user = relationship("User")
+    user = relationship("User", overlaps="recommendation_feedback")
 
 
 class ItemUsage(Base):
@@ -153,9 +154,9 @@ class ItemUsage(Base):
     item_id = Column(Integer, ForeignKey("wardrobe_items.id"), nullable=False, index=True)
     action = Column(String(50), nullable=False)  # "kept" | "discarded" | "worn"
     wear_count = Column(Integer, default=1)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
 
-    user = relationship("User")
+    user = relationship("User", overlaps="item_usage")
     wardrobe_item = relationship("WardrobeItem")
 
 
@@ -167,10 +168,10 @@ class ModelMetrics(Base):
     model_name = Column(String(100), nullable=False)  # "color_harmony" | "clothing_classifier" | "body_shape"
     metric_type = Column(String(50), nullable=False)  # "accuracy" | "avg_rating" | "helpful_rate" | "drift_score"
     value = Column(Float, nullable=False)
-    evaluation_date = Column(DateTime, default=datetime.utcnow, index=True)
+    evaluation_date = Column(DateTime, default=utcnow, index=True)
     version = Column(String(50), nullable=True)  # Model version/epoch for tracking
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 
 def _item_to_dict_minimal(item):

@@ -1,5 +1,6 @@
 """Shared utility functions."""
 
+from datetime import datetime, timezone
 from typing import Any, Dict, Union
 
 from fastapi import HTTPException, Request
@@ -9,6 +10,11 @@ from config import SECRET_KEY, ALGORITHM
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def utcnow() -> datetime:
+    """Return a naive UTC datetime without using deprecated `datetime.utcnow()`."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def get_remote_address(request: Request) -> str:

@@ -9,6 +9,7 @@ from sqlalchemy import select, func
 from .models import User, WardrobeItem, Outfit, RefreshToken, OutfitRating, RecommendationFeedback, ItemUsage, ModelMetrics
 from typing import Optional, List, Dict, Any
 from . import models
+from utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +251,7 @@ def mark_email_verified(db: Session, user_id: int) -> Optional[User]:
         if not user:
             return None
         user.email_verified = True
-        user.email_verified_at = datetime.utcnow()
+        user.email_verified_at = utcnow()
         user.email_verification_token_hash = None
         user.email_verification_expires_at = None
         db.commit()
@@ -350,7 +351,7 @@ def revoke_refresh_token(
         if not token:
             return False
         if token.revoked_at is None:
-            token.revoked_at = datetime.utcnow()
+            token.revoked_at = utcnow()
         if replaced_by_jti:
             token.replaced_by_jti = replaced_by_jti
         if reason:
@@ -365,7 +366,7 @@ def revoke_refresh_token(
 def revoke_all_user_refresh_tokens(db: Session, user_id: int) -> int:
     """Revoke all active refresh tokens for a user."""
     try:
-        now = datetime.utcnow()
+        now = utcnow()
         updated = (
             db.query(RefreshToken)
             .filter(
@@ -408,7 +409,7 @@ def touch_refresh_token_usage(db: Session, jti: str) -> bool:
         token = get_refresh_token_by_jti(db, jti)
         if not token:
             return False
-        token.last_used_at = datetime.utcnow()
+        token.last_used_at = utcnow()
         db.commit()
         return True
     except SQLAlchemyError as e:
@@ -1014,7 +1015,7 @@ def get_feedback_for_period(
         Dict with outfit_ratings, rec_feedback, item_usage counts
     """
     try:
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = utcnow() - timedelta(days=days)
         
         ratings = db.query(models.OutfitRating).filter(
             models.OutfitRating.created_at >= cutoff_date

@@ -61,6 +61,7 @@ from services.secure_image_storage import (
 )
 from services.task_queue import enqueue_inference_job, fetch_job, get_job_owner, get_job_type
 from services.observability import log_event, setup_structured_logging
+from utils import utcnow
 
 logger = logging.getLogger(__name__)
 setup_structured_logging()
@@ -577,7 +578,7 @@ def create_email_verification_token() -> Tuple[str, str, datetime]:
         raw_token.encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
-    expires_at = datetime.utcnow() + timedelta(hours=EMAIL_VERIFICATION_EXPIRATION_HOURS)
+    expires_at = utcnow() + timedelta(hours=EMAIL_VERIFICATION_EXPIRATION_HOURS)
     return raw_token, token_hash, expires_at
 
 def hash_email_verification_token(token: str) -> str:
@@ -619,7 +620,7 @@ If you did not request this, you can ignore this email.
         server.send_message(message)
 
 def create_token(user_id: int, token_type: str, expires_delta: timedelta) -> Dict[str, Any]:
-    now = datetime.utcnow()
+    now = utcnow()
     expire = now + expires_delta
     return {
         "sub": str(user_id),
@@ -857,7 +858,7 @@ async def verify_email(
             "email": user.email,
         }
 
-    if not user.email_verification_expires_at or user.email_verification_expires_at <= datetime.utcnow():
+    if not user.email_verification_expires_at or user.email_verification_expires_at <= utcnow():
         audit_auth_event("verify_email", request, "failure", user_id=user.id, email=user.email, detail="token_expired")
         raise HTTPException(status_code=400, detail="Verification token expired. Please request a new one.")
 
@@ -949,7 +950,7 @@ async def refresh_token(
     if token_record.revoked_at is not None:
         audit_auth_event("refresh", request, "failure", user_id=int(user_id), detail="token_replay")
         raise HTTPException(status_code=401, detail="Refresh token already used")
-    if token_record.expires_at <= datetime.utcnow():
+    if token_record.expires_at <= utcnow():
         audit_auth_event("refresh", request, "failure", user_id=int(user_id), detail="token_expired_db")
         raise HTTPException(status_code=401, detail="Refresh token expired")
 
@@ -1003,7 +1004,7 @@ async def list_auth_sessions(
     current_user_id: int = Depends(verify_token),
 ):
     """List user sessions from refresh token records."""
-    now = datetime.utcnow()
+    now = utcnow()
     tokens = crud.list_user_refresh_tokens(db, current_user_id)
     sessions = [
         {
@@ -1903,7 +1904,7 @@ async def get_user_feedback_summary(
 
     days = max(1, min(days, 365))
     limit = max(1, min(limit, 50))
-    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    cutoff_date = utcnow() - timedelta(days=days)
 
     outfit_ratings = (
         db.query(models.OutfitRating)

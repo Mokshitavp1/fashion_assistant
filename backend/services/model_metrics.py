@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 
 from database import crud, models
+from utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +127,7 @@ def evaluate_outfit_accuracy(
             "value": accuracy,
             "mean_absolute_error": mae,
             "predictions_evaluated": valid_comparisons,
-            "evaluation_date": datetime.utcnow()
+            "evaluation_date": utcnow()
         }
         
     except Exception as e:
@@ -199,7 +200,7 @@ def evaluate_recommendation_helpful_rate(
             "value": helpful_rate,
             "helpful_count": helpful_count,
             "total_feedback": len(rec_feedback),
-            "evaluation_date": datetime.utcnow()
+            "evaluation_date": utcnow()
         }
         
     except Exception as e:

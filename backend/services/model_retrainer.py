@@ -25,6 +25,7 @@ from services.model_registry import (
     record_experiment,
     register_model_version,
 )
+from utils import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -74,10 +75,10 @@ def retrain_color_harmony_rules(
         }
         
         # Create new model config
-        version = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        version = utcnow().strftime("%Y%m%d_%H%M%S")
         new_model_config = {
             "model_type": "color_harmony_rules_v2",
-            "trained_at": datetime.utcnow().isoformat(),
+            "trained_at": utcnow().isoformat(),
             "version": version,
             "samples_used": len(ratings),
             "high_rated_patterns": high_rated_patterns,
@@ -128,11 +129,11 @@ def retrain_clothing_classifier(
         # Items that are worn frequently are likely well-classified
         # Items that are discarded may have been misclassified (wrong category)
         
-        version = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        version = utcnow().strftime("%Y%m%d_%H%M%S")
         new_checkpoint = {
             "model": "mobilenet_v3_small_retrained",
             "version": version,
-            "trained_at": datetime.utcnow().isoformat(),
+            "trained_at": utcnow().isoformat(),
             "samples_used": len(usage),
             "kept_items": kept_count,
             "discarded_items": discarded_count,
@@ -181,11 +182,11 @@ def retrain_body_shape_detection(
         unhelpful_count = sum(1 for f in rec_feedback if f.helpful == 0)
         helpful_rate = helpful_count / len(rec_feedback) if rec_feedback else 0
         
-        version = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        version = utcnow().strftime("%Y%m%d_%H%M%S")
         new_config = {
             "model": "body_shape_detection_v2",
             "version": version,
-            "trained_at": datetime.utcnow().isoformat(),
+            "trained_at": utcnow().isoformat(),
             "feedback_used": len(rec_feedback),
             "helpful_recommendations": helpful_count,
             "unhelpful_recommendations": unhelpful_count,
@@ -266,7 +267,7 @@ def evaluate_and_improve(
         should_deploy = improvement_estimated >= accuracy_threshold
 
         active_version = get_active_model_version(old_model)
-        candidate_version = str(new_model_checkpoint.get("version", datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
+        candidate_version = str(new_model_checkpoint.get("version", utcnow().strftime("%Y%m%d_%H%M%S")))
         record_experiment(
             model_name=old_model,
             control_version=active_version or "baseline",
@@ -311,7 +312,7 @@ def deploy_model_if_improved(
     """
     logger.info(f"Deploying new {model_name} model...")
     
-    version = new_checkpoint.get("version", datetime.utcnow().strftime("%Y%m%d_%H%M%S"))
+    version = new_checkpoint.get("version", utcnow().strftime("%Y%m%d_%H%M%S"))
     artifact_path = new_checkpoint.get("artifact_path")
     
     try:
@@ -361,7 +362,7 @@ def deploy_model_if_improved(
             "model": model_name,
             "version": version,
             "samples_used": new_checkpoint.get("samples_used"),
-            "deployed_at": datetime.utcnow().isoformat(),
+            "deployed_at": utcnow().isoformat(),
             "improvement": new_checkpoint.get("improvement", "N/A"),
             "artifact_path": artifact_path,
         }
@@ -374,7 +375,7 @@ def deploy_model_if_improved(
             "status": "deployed",
             "model": model_name,
             "version": version,
-            "deployed_at": datetime.utcnow(),
+            "deployed_at": utcnow(),
             "samples_used": new_checkpoint.get("samples_used"),
             "info": new_checkpoint.get("improvement"),
             "artifact_path": artifact_path,
@@ -423,7 +424,7 @@ def retrain_all_models(
     logger.info(f"Retraining with {total_feedback} feedback points from last {lookback_days} days")
     
     results = {
-        "start_time": datetime.utcnow(),
+        "start_time": utcnow(),
         "total_feedback": total_feedback,
         "models_updated": [],
         "registry_updates": [],
@@ -453,7 +454,7 @@ def retrain_all_models(
             results["registry_updates"].append(deployment)
             results["models_updated"].append("body_shape")
     
-    results["end_time"] = datetime.utcnow()
+    results["end_time"] = utcnow()
     results["status"] = "complete"
 
     if not results["models_updated"]:
