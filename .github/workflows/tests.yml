@@ -28,8 +28,7 @@ jobs:
 
     - name: Run pytest with coverage
       run: |
-        cd backend
-        pytest --cov=. --cov-report=xml --cov-report=html --cov-report=term-missing
+        bash scripts/run_tests.sh backend/tests
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

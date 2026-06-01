@@ -29,11 +29,13 @@ Thanks for helping improve Fashion App.
 3. Validate your changes before opening a pull request.
 
    ```bash
-   python -m pytest -q backend
+   ./scripts/run_tests.sh
    cd frontend
    npm run lint
    npm run build
    ```
+
+   On Windows PowerShell, use `powershell -File .\scripts\run_tests.ps1`.
 
 ## Code Style
 

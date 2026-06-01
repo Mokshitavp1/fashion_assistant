@@ -21,7 +21,7 @@ import cv2
 import numpy as np
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import String, Boolean, inspect, text
+from sqlalchemy import String, Text, Boolean, inspect, text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import FastAPI, File, Form, UploadFile, Depends, HTTPException, Request
@@ -337,7 +337,7 @@ class LogoutAllResponse(BaseModel):
 # ============ SETUP ============
 for table in models.Base.metadata.tables.values():
     for col in table.columns:
-        if isinstance(col.type, String) and col.type.length is None:
+        if isinstance(col.type, String) and not isinstance(col.type, Text) and col.type.length is None:
             col.type.length = 255
 
 try:

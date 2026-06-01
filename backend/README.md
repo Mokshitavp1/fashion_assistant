@@ -169,7 +169,7 @@ This backend is a FastAPI app with JWT auth, image processing, and SQLAlchemy.
 From workspace root:
 
 - Run backend: `npm run backend:dev`
-- Run backend pytest: `python -m pytest -q backend`
+- Run backend tests: `./scripts/run_tests.sh` or `powershell -File .\scripts\run_tests.ps1`
 
 ## Worker Queue (Horizontal ML Scalability)
 

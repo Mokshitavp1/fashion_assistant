@@ -15,6 +15,7 @@ TEST_DB_URL = f"sqlite:///{TEST_DB_PATH.as_posix()}"
 os.environ.setdefault("SECRET_KEY", "test-secret-key-with-at-least-32-characters")
 os.environ.setdefault("DATABASE_URL", TEST_DB_URL)
 os.environ.setdefault("ENV", "development")
+os.environ.setdefault("EMAIL_VERIFICATION_REQUIRED", "true")
 os.environ.setdefault("INFERENCE_QUEUE_ENABLED", "false")
 
 if TEST_DB_PATH.exists():

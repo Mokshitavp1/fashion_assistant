@@ -187,13 +187,13 @@ Full setup notes are in [DEPLOYMENT_FREE_NO_CARD.md](DEPLOYMENT_FREE_NO_CARD.md)
 
 ## Validation
 
-- Backend tests: `python -m pytest -q backend`
+- Backend tests: `./scripts/run_tests.sh` or `powershell -File .\scripts\run_tests.ps1`
 - Frontend lint: `cd frontend && npm run lint`
 - Frontend build: `cd frontend && npm run build`
 
 ## CI/CD
 
-GitHub Actions now runs frontend lint/test/build and backend tests on every push and pull request. Pushes to `main` also package a frontend build artifact and a backend container image for release delivery.
+GitHub Actions now runs frontend lint/test/build and backend tests on every push and pull request. The backend PR job uses `scripts/run_tests.sh` so local and CI validation stay aligned. Pushes to `main` also package a frontend build artifact and a backend container image for release delivery.
 
 ## Project Structure
 

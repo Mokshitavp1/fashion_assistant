@@ -71,7 +71,7 @@ jobs:
           python -m pip install -r backend/requirements.txt pytest
 
       - name: Run backend tests
-        run: python -m pytest -q backend
+        run: bash scripts/run_tests.sh backend/tests
 
   package:
     name: Package release artifacts
