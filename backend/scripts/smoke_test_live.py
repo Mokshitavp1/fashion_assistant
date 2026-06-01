@@ -1,9 +1,11 @@
 import httpx
 import time
+import os
 
-base='http://127.0.0.1:8002'
-email=f"smoketest_{int(time.time())}@gmail.com"
-password='TestPass123A'
+# Allow overriding target base URL via environment variable `SMOKE_BASE`.
+base = os.environ.get("SMOKE_BASE", "http://127.0.0.1:8002")
+email = f"smoketest_{int(time.time())}@gmail.com"
+password = 'TestPass123A'
 print('Using base', base)
 try:
     with httpx.Client(timeout=10) as c:
