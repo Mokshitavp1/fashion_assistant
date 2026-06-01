@@ -1,1 +1,0 @@
-export { useWardrobeStore } from './wardrobeStore';

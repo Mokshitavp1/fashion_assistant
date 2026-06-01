@@ -1,1 +1,0 @@
-export { sharedCSS } from '../sharedstyles';
