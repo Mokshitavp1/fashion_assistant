@@ -28,7 +28,6 @@ def models_use_ai() -> bool:
 # - has relationship to user (many-to-one)
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, DateTime, Boolean
 from sqlalchemy.orm import relationship
-from datetime import datetime
 from .database import Base
 import re
 from utils import utcnow

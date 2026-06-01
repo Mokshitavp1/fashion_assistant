@@ -605,7 +605,6 @@ def _send_password_reset_email(email: str, reset_token: str) -> None:
         email: Recipient email
         reset_token: Reset token to send
     """
-    from datetime import datetime
     import smtplib
     from email.message import EmailMessage
     from config import (
@@ -649,5 +648,4 @@ If you did not request this, you can ignore this email.
         server.send_message(message)
 
 
-# Add datetime import at the top
-from datetime import datetime
+# datetime import removed (not used)
