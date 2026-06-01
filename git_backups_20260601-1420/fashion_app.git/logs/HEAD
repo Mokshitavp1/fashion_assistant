@@ -1,7 +1,0 @@
-0000000000000000000000000000000000000000 fc064d4b5cf165ad1a94d3b5c987fe7ac3f00dac Mokshita VP <vmokshita@gmail.com> 1779878866 +0530	clone: from https://huggingface.co/spaces/mokshita1/fashion_app
-fc064d4b5cf165ad1a94d3b5c987fe7ac3f00dac 563ccfbff989a9c517e10dc03d28b25d494b7b59 Mokshita VP <vmokshita@gmail.com> 1779879299 +0530	commit: Add fashion_app backend with uvicorn on port 7860
-563ccfbff989a9c517e10dc03d28b25d494b7b59 c9016940b6a9aaff5d72176fd8052a38d822e03a Mokshita VP <vmokshita@gmail.com> 1779879838 +0530	commit: Remove DB files and ignore them
-0000000000000000000000000000000000000000 c9016940b6a9aaff5d72176fd8052a38d822e03a Mokshita VP <vmokshita@gmail.com> 1779879989 +0530	checkout: moving from clean to main
-c9016940b6a9aaff5d72176fd8052a38d822e03a 5029b56994d7b65c4ef26215a254deeeca4ff368 Mokshita VP <vmokshita@gmail.com> 1780295093 +0530	commit: fix: align frontend API env config with docker compose
-5029b56994d7b65c4ef26215a254deeeca4ff368 5029b56994d7b65c4ef26215a254deeeca4ff368 Mokshita VP <vmokshita@gmail.com> 1780298773 +0530	reset: moving to HEAD
-5029b56994d7b65c4ef26215a254deeeca4ff368 c89a09ba33f4ac1a99d0dea8aaf5c98289baefc3 Mokshita VP <vmokshita@gmail.com> 1780298818 +0530	reset: moving to origin/main
