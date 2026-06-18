@@ -1582,9 +1582,9 @@ async def analyze_user(
 
 @app.get("/users/{user_id}")
 async def get_user(
+    request: Request,
     user_id: int,
     db: Session = Depends(get_db),
-    request: Request = None,
     current_user_id: int = Depends(verify_token),
 ):
     """Get user profile and analysis data"""
@@ -1598,11 +1598,7 @@ async def get_user(
     profile_image_url = None
     if user.profile_image_path and user.profile_image_path.startswith("encrypted://"):
         image_id = user.profile_image_path.replace("encrypted://", "")
-        profile_image_url = (
-            f"{request.base_url}images/{image_id}".rstrip("/")
-            if request
-            else f"/images/{image_id}"
-        )
+        profile_image_url = f"{request.base_url}images/{image_id}".rstrip("/")
 
     return {
         "id": user.id,
@@ -1786,9 +1782,9 @@ async def add_wardrobe_item(
 
 @app.get("/users/{user_id}/wardrobe")
 async def get_wardrobe(
+    request: Request,
     user_id: int,
     db: Session = Depends(get_db),
-    request: Request = None,
     current_user_id: int = Depends(verify_token),
 ):
     """Get user's wardrobe items"""
@@ -1815,20 +1811,12 @@ async def get_wardrobe(
                 # Convert encrypted reference to image URL
                 if img_path.startswith("encrypted://"):
                     image_id = img_path.replace("encrypted://", "")
-                    image_url = (
-                        f"{request.base_url}images/{image_id}".rstrip("/")
-                        if request
-                        else f"/images/{image_id}"
-                    )
+                    image_url = f"{request.base_url}images/{image_id}".rstrip("/")
                 else:
                     # Legacy: plain path (shouldn't happen for new uploads)
                     filename_only = os.path.basename(img_path)
-                    base = str(request.base_url).rstrip("/") if request else ""
-                    image_url = (
-                        f"{base}/uploads/{filename_only}"
-                        if base
-                        else f"/uploads/{filename_only}"
-                    )
+                    base = str(request.base_url).rstrip("/")
+                    image_url = f"{base}/uploads/{filename_only}"
 
             normalized_items.append(
                 {

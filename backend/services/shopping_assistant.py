@@ -314,7 +314,27 @@ def analyze_shopping_item(
     new_item_type = _require_non_empty_string(
         classification.get("type"), "classification.type"
     )
-    new_item_category = "top" if new_item_type in ["shirt", "dress"] else "bottom"
+    # Map the classifier's output type to a wardrobe category.
+    #
+    # Classifier can return: "top", "dress", "bottom", "jeans", "outerwear", "other"
+    #   • "dress"     → "dress"      — standalone item, pairs with accessories only
+    #   • "top" /
+    #     "outerwear" → "top"        — pairs with bottoms
+    #   • "bottom" /
+    #     "jeans"     → "bottom"     — pairs with tops
+    #   • "other"     → "top"        — safest default (tops are most common)
+    #
+    # Previously "dress" was incorrectly grouped with "top", causing the system to
+    # look for bottoms to pair with it and producing wrong compatibility scores.
+    _BOTTOM_TYPES = {"bottom", "jeans"}
+    _TOP_TYPES = {"top", "outerwear"}
+    if new_item_type == "dress":
+        new_item_category = "dress"
+    elif new_item_type in _BOTTOM_TYPES:
+        new_item_category = "bottom"
+    else:
+        # "top", "outerwear", "other" all default to top-pairing behaviour
+        new_item_category = "top"
 
     # Step 2: Find matching wardrobe items
     matching_items = find_matching_wardrobe_items(
@@ -324,11 +344,18 @@ def analyze_shopping_item(
     )
 
     # Step 3: Calculate compatibility
+    # total_relevant is the pool of items this new piece can actually pair with.
     categorized = categorize_wardrobe_items(wardrobe_items)
     if new_item_category == "top":
         total_relevant = len(categorized.get("bottom", []))
     elif new_item_category == "bottom":
         total_relevant = len(categorized.get("top", []))
+    elif new_item_category == "dress":
+        # Dresses are standalone — they pair with accessories; use that pool.
+        # Fall back to total wardrobe size when no accessories exist so the
+        # compatibility score is not artificially inflated against an empty set.
+        accessories = categorized.get("accessories", [])
+        total_relevant = len(accessories) if accessories else len(wardrobe_items)
     else:
         total_relevant = len(wardrobe_items)
 

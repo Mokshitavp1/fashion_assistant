@@ -1004,7 +1004,7 @@ def create_item_usage(
             user_id=user_id,
             item_id=item_id,
             action=action,
-            wear_count=max(1, wear_count),
+            wear_count=wear_count,
         )
 
         db.add(usage)
