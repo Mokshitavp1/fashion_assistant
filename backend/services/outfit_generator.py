@@ -302,14 +302,14 @@ def generate_outfits(
     categorized = categorize_wardrobe_items(wardrobe_items)
 
     # Generate combinations
-    combinations = generate_outfit_combinations(categorized)
+    outfit_combinations = generate_outfit_combinations(categorized)
 
     normalized_occasion = normalize_occasion(occasion)
 
     # Score each outfit
     scored_outfits = []
     all_scored_outfits = []
-    for outfit_items in combinations:
+    for outfit_items in outfit_combinations:
         # Filter by season if specified
         if season:
             if not all(item.season in [season, "all", None] for item in outfit_items):

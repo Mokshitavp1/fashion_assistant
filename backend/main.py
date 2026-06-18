@@ -827,13 +827,15 @@ def get_db():
 
 
 # ============ HELPER FUNCTIONS ============
-def validate_file_size(file: UploadFile) -> None:
-    """Validate uploaded file size"""
-    if file.size and file.size > MAX_FILE_SIZE:
+def validate_file_size(file_bytes: bytes) -> None:
+    """Validate uploaded file size from raw bytes"""
+    if len(file_bytes) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=413,
             detail=f"File too large. Max size: {MAX_FILE_SIZE / (1024*1024):.0f}MB",
         )
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Invalid image file")
 
 
 def validate_file_type(file: UploadFile) -> None:
@@ -1477,7 +1479,8 @@ async def analyze_user(
 ):
     """Analyze user's body shape and skin tone, save to database"""
     verify_user_ownership(user_id, current_user_id)
-    validate_file_size(image)
+    image_bytes = await image.read()
+    validate_file_size(image_bytes)
     validate_file_type(image)
 
     user_data = UserAnalyze(height=height, weight=weight)
@@ -1487,9 +1490,6 @@ async def analyze_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     if INFERENCE_QUEUE_ENABLED:
-        image_bytes = await image.read()
-        if not image_bytes:
-            raise HTTPException(status_code=400, detail="Invalid image file")
         try:
             image_b64 = base64.b64encode(image_bytes).decode("utf-8")
             job = enqueue_inference_job(
@@ -1519,7 +1519,6 @@ async def analyze_user(
             },
         )
 
-    image_bytes = await image.read()
     np_array = np.frombuffer(image_bytes, np.uint8)
     image_array = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
     if image_array is None:
@@ -1627,7 +1626,8 @@ async def add_wardrobe_item(
 ):
     """Add a clothing item to user's wardrobe"""
     verify_user_ownership(user_id, current_user_id)
-    validate_file_size(image)
+    image_bytes = await image.read()
+    validate_file_size(image_bytes)
     validate_file_type(image)
 
     item_data = WardrobeItemCreate(category=category, season=season)
@@ -1656,9 +1656,6 @@ async def add_wardrobe_item(
             raise HTTPException(status_code=404, detail="User not found")
 
         if INFERENCE_QUEUE_ENABLED:
-            image_bytes = await image.read()
-            if not image_bytes:
-                raise HTTPException(status_code=400, detail="Invalid image file")
             try:
                 image_b64 = base64.b64encode(image_bytes).decode("utf-8")
                 job = enqueue_inference_job(
@@ -1689,8 +1686,6 @@ async def add_wardrobe_item(
                     "queue_mode": "async",
                 },
             )
-
-        image_bytes = await image.read()
 
         np_array = np.frombuffer(image_bytes, np.uint8)
         image_array = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
@@ -1999,7 +1994,8 @@ async def analyze_shopping_item_endpoint(
     Provides compatibility check with wardrobe and purchase recommendation.
     """
     verify_user_ownership(user_id, current_user_id)
-    validate_file_size(image)
+    image_bytes = await image.read()
+    validate_file_size(image_bytes)
     validate_file_type(image)
 
     user = crud.get_user_by_id(db, user_id)
@@ -2014,18 +2010,19 @@ async def analyze_shopping_item_endpoint(
 
     wardrobe_items = crud.get_user_wardrobe(db, user_id)
 
-    image_bytes = await image.read()
     np_array = np.frombuffer(image_bytes, np.uint8)
     image_array = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
 
     if image_array is None:
         raise HTTPException(status_code=400, detail="Invalid image file")
 
-    analysis = analyze_shopping_item(
-        image=image_array,
-        wardrobe_items=wardrobe_items,
-        user_body_shape=user.body_shape,
-        user_undertone=user.undertone,
+    analysis = await run_bounded_image_job(
+        "shopping_analysis",
+        analyze_shopping_item,
+        image_array,
+        wardrobe_items,
+        user.body_shape,
+        user.undertone,
     )
 
     return {
