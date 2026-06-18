@@ -38,6 +38,7 @@
 # - checks if both are neutral (gray/white/black) - these match everything
 # - returns a dictionary with: compatible (bool), harmony_type (string), score (float 0-1)
 
+
 # write a function calculate_outfit_color_score that:
 # - accepts a list of RGB tuples (colors in an outfit)
 # - checks pairwise color harmony between all colors
@@ -77,6 +78,8 @@ def rgb_to_hsv(rgb: tuple) -> tuple:
     s = 0 if mx == 0 else df / mx
     v = mx
     return (h, s, v)
+
+
 def get_color_temperature(rgb: tuple) -> str:
     h, s, v = rgb_to_hsv(rgb)
     if s < 0.1 and v > 0.9:
@@ -86,27 +89,35 @@ def get_color_temperature(rgb: tuple) -> str:
     elif h >= 60 and h <= 300:
         return "cool"
     return "neutral"
+
+
 def colors_are_complementary(rgb1: tuple, rgb2: tuple) -> bool:
     h1, s1, v1 = rgb_to_hsv(rgb1)
     h2, s2, v2 = rgb_to_hsv(rgb2)
     hue_distance = abs(h1 - h2)
     hue_distance = min(hue_distance, 360 - hue_distance)
-    return abs(hue_distance - 180) <= 30 
+    return abs(hue_distance - 180) <= 30
+
+
 def colors_are_analogous(rgb1: tuple, rgb2: tuple) -> bool:
     h1, s1, v1 = rgb_to_hsv(rgb1)
     h2, s2, v2 = rgb_to_hsv(rgb2)
-    return abs(h1 - h2) <= 60   
+    return abs(h1 - h2) <= 60
+
+
 def colors_are_monochromatic(rgb1: tuple, rgb2: tuple) -> bool:
     h1, s1, v1 = rgb_to_hsv(rgb1)
     h2, s2, v2 = rgb_to_hsv(rgb2)
-    return abs(h1 - h2) <= 15 and (abs(s1 - s2) > 0.1 or abs(v1 - v2) > 0.1)    
+    return abs(h1 - h2) <= 15 and (abs(s1 - s2) > 0.1 or abs(v1 - v2) > 0.1)
+
+
 def check_color_harmony(rgb1: tuple, rgb2: tuple) -> dict:
     temp1 = get_color_temperature(rgb1)
     temp2 = get_color_temperature(rgb2)
-    
+
     if temp1 == "neutral" or temp2 == "neutral":
         return {"compatible": True, "harmony_type": "neutral", "score": 1.0}
-    
+
     if colors_are_complementary(rgb1, rgb2):
         return {"compatible": True, "harmony_type": "complementary", "score": 1.0}
     elif colors_are_analogous(rgb1, rgb2):
@@ -114,25 +125,26 @@ def check_color_harmony(rgb1: tuple, rgb2: tuple) -> dict:
     elif colors_are_monochromatic(rgb1, rgb2):
         return {"compatible": True, "harmony_type": "monochromatic", "score": 0.7}
     else:
-        return {"compatible": False, "harmony_type": "none", "score": 0.0}  
+        return {"compatible": False, "harmony_type": "none", "score": 0.0}
+
+
 def calculate_outfit_color_score(colors: list) -> float:
     if not isinstance(colors, list):
         raise ValueError("colors must be provided as a list of RGB tuples")
     if len(colors) < 2:
-        return 1.0  
-    
+        return 1.0
+
     validated_colors = [_validate_rgb(color) for color in colors]
     total_score = 0.0
     comparisons = 0
-    
+
     for i in range(len(validated_colors)):
         for j in range(i + 1, len(validated_colors)):
             harmony = check_color_harmony(validated_colors[i], validated_colors[j])
             total_score += harmony["score"]
             comparisons += 1
-            
+
     if comparisons == 0:
         return 0.0
-    
-    return total_score / comparisons    
 
+    return total_score / comparisons

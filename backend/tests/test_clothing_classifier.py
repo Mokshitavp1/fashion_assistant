@@ -22,7 +22,11 @@ def test_predict_with_model_uses_confident_label(monkeypatch) -> None:
     monkeypatch.setattr(
         cc,
         "_get_image_classifier",
-        lambda: (lambda _img, top_k=5: [{"label": "jersey, T-shirt, tee shirt", "score": 0.92}]),
+        lambda: (
+            lambda _img, top_k=5: [
+                {"label": "jersey, T-shirt, tee shirt", "score": 0.92}
+            ]
+        ),
     )
 
     result = cc._predict_with_model(image)
@@ -40,7 +44,11 @@ def test_predict_with_model_falls_back_on_low_confidence(monkeypatch) -> None:
     monkeypatch.setattr(
         cc,
         "_get_image_classifier",
-        lambda: (lambda _img, top_k=5: [{"label": "jersey, T-shirt, tee shirt", "score": 0.50}]),
+        lambda: (
+            lambda _img, top_k=5: [
+                {"label": "jersey, T-shirt, tee shirt", "score": 0.50}
+            ]
+        ),
     )
 
     result = cc._predict_with_model(image)

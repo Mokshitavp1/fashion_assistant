@@ -6,7 +6,6 @@ from celery.result import AsyncResult
 from celery.schedules import crontab
 from redis import Redis
 
-
 REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 INFERENCE_QUEUE_NAME = os.getenv("INFERENCE_QUEUE_NAME", "inference")
 INFERENCE_JOB_TIMEOUT = int(os.getenv("INFERENCE_JOB_TIMEOUT", "300"))
@@ -28,19 +27,18 @@ celery_app.conf.update(
     result_expires=INFERENCE_RESULT_TTL,
     # Celery Beat schedule for periodic tasks
     beat_schedule={
-        'compute-metrics-daily': {
-            'task': 'worker_tasks.compute_metrics',
-            'schedule': crontab(hour=2, minute=0),  # 2 AM UTC daily
-            'args': (30,),  # 30 day lookback
+        "compute-metrics-daily": {
+            "task": "worker_tasks.compute_metrics",
+            "schedule": crontab(hour=2, minute=0),  # 2 AM UTC daily
+            "args": (30,),  # 30 day lookback
         },
-        'retrain-models-weekly': {
-            'task': 'worker_tasks.retrain_all_models',
-            'schedule': crontab(day_of_week=0, hour=3, minute=0),  # Sundays 3 AM UTC
-            'args': (30,),  # 30 day lookback
+        "retrain-models-weekly": {
+            "task": "worker_tasks.retrain_all_models",
+            "schedule": crontab(day_of_week=0, hour=3, minute=0),  # Sundays 3 AM UTC
+            "args": (30,),  # 30 day lookback
         },
     },
 )
-
 
 
 def get_redis_connection() -> Redis:

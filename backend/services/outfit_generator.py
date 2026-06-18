@@ -1,4 +1,5 @@
 """Rule-based outfit generator for the fashion app — deterministic heuristics, no ML/API calls."""
+
 APP_NAME = "fashion"
 
 # Import necessary modules
@@ -125,7 +126,12 @@ def infer_item_occasion_tags(item: WardrobeItem) -> set:
     clothing_type = (item.clothing_type or "").strip().lower()
     pattern = (item.pattern or "").strip().lower()
 
-    if category in {"dress", "accessories"} and pattern in {"solid", "floral", "striped", "checked"}:
+    if category in {"dress", "accessories"} and pattern in {
+        "solid",
+        "floral",
+        "striped",
+        "checked",
+    }:
         tags.update({"formal", "party"})
 
     if category in {"top", "bottom", "shoes"}:
@@ -145,7 +151,9 @@ def infer_item_occasion_tags(item: WardrobeItem) -> set:
     return tags
 
 
-def calculate_occasion_compatibility(occasion: str, outfit_items: List[WardrobeItem]) -> float:
+def calculate_occasion_compatibility(
+    occasion: str, outfit_items: List[WardrobeItem]
+) -> float:
     normalized = normalize_occasion(occasion)
     if not normalized or normalized not in OCCASION_RULES:
         return 0.75
@@ -175,41 +183,40 @@ def calculate_occasion_compatibility(occasion: str, outfit_items: List[WardrobeI
 
     return max(0.0, min(score / len(outfit_items), 1.0))
 
-def categorize_wardrobe_items(items: List[WardrobeItem]) -> Dict[str, List[WardrobeItem]]:
+
+def categorize_wardrobe_items(
+    items: List[WardrobeItem],
+) -> Dict[str, List[WardrobeItem]]:
     """Group wardrobe items by category"""
-    categories = {
-        "top": [],
-        "bottom": [],
-        "dress": [],
-        "shoes": [],
-        "accessories": []
-    }
-    
+    categories = {"top": [], "bottom": [], "dress": [], "shoes": [], "accessories": []}
+
     for item in items:
         category = item.category.lower() if item.category else "accessories"
         if category in categories:
             categories[category].append(item)
         else:
             categories["accessories"].append(item)
-    
+
     return categories
+
 
 def parse_rgb_from_string(color_string: str) -> tuple:
     """Convert color name to RGB tuple"""
     color_lower = color_string.lower().strip()
     return COLOR_MAP.get(color_lower, (128, 128, 128))  # Default to gray
 
+
 def calculate_undertone_compatibility(undertone: str, colors: List[tuple]) -> float:
     """Calculate how well colors match the user's undertone"""
     if not undertone or not colors:
         return 0.7  # Neutral score
-    
+
     undertone = undertone.lower()
     compatible_count = 0
-    
+
     for color in colors:
         color_temp = get_color_temperature(color)
-        
+
         # Warm undertone works well with warm colors
         if undertone == "warm" and color_temp == "warm":
             compatible_count += 1
@@ -222,56 +229,61 @@ def calculate_undertone_compatibility(undertone: str, colors: List[tuple]) -> fl
         # Neutral colors work with any undertone
         elif color_temp == "neutral":
             compatible_count += 0.5
-    
+
     return min(compatible_count / len(colors), 1.0)
 
+
 def calculate_outfit_score(
-    body_shape: str,
-    undertone: str,
-    items: List[Dict]
+    body_shape: str, undertone: str, items: List[Dict]
 ) -> Dict[str, float]:
     """Calculate overall outfit score based on multiple factors"""
-    
+
     # Extract colors from items
     colors = []
     for item in items:
         color_rgb = parse_rgb_from_string(item.get("color_primary", "gray"))
         colors.append(color_rgb)
-    
+
     # Calculate individual scores
     color_score = calculate_outfit_color_score(colors) if len(colors) > 1 else 1.0
     body_shape_score = calculate_outfit_body_shape_score(body_shape, items)
     undertone_score = calculate_undertone_compatibility(undertone, colors)
-    
+
     # Weighted overall score
-    overall_score = (color_score * 0.4) + (body_shape_score * 0.4) + (undertone_score * 0.2)
-    
+    overall_score = (
+        (color_score * 0.4) + (body_shape_score * 0.4) + (undertone_score * 0.2)
+    )
+
     return {
         "overall": overall_score,
         "color": color_score,
         "body_shape": body_shape_score,
-        "undertone": undertone_score
+        "undertone": undertone_score,
     }
 
-def generate_outfit_combinations(categorized_items: Dict[str, List[WardrobeItem]]) -> List[List[WardrobeItem]]:
+
+def generate_outfit_combinations(
+    categorized_items: Dict[str, List[WardrobeItem]],
+) -> List[List[WardrobeItem]]:
     """Generate possible outfit combinations"""
     outfits = []
-    
+
     tops = categorized_items.get("top", [])
     bottoms = categorized_items.get("bottom", [])
     dresses = categorized_items.get("dress", [])
-    
+
     # Combination 1: Top + Bottom
     for top in tops[:10]:  # Limit to avoid too many combinations
         for bottom in bottoms[:10]:
             outfits.append([top, bottom])
-    
+
     # Combination 2: Dress alone
     for dress in dresses[:10]:
         outfits.append([dress])
-    
+
     # Limit total combinations
     return outfits[:20]
+
 
 def generate_outfits(
     wardrobe_items: List[WardrobeItem],
@@ -279,19 +291,19 @@ def generate_outfits(
     undertone: str,
     occasion: Optional[str] = None,
     season: Optional[str] = None,
-    min_score: float = 0.55
+    min_score: float = 0.55,
 ) -> List[Dict]:
     """Generate and score outfit recommendations"""
-    
+
     if not wardrobe_items:
         return []
-    
+
     # Categorize items
     categorized = categorize_wardrobe_items(wardrobe_items)
-    
+
     # Generate combinations
     combinations = generate_outfit_combinations(categorized)
-    
+
     normalized_occasion = normalize_occasion(occasion)
 
     # Score each outfit
@@ -302,28 +314,32 @@ def generate_outfits(
         if season:
             if not all(item.season in [season, "all", None] for item in outfit_items):
                 continue
-        
+
         # Convert items to dict format for scoring
         items_dict = [
             {
                 "type": item.clothing_type,
                 "category": item.category,
-                "color_primary": item.color_primary
+                "color_primary": item.color_primary,
             }
             for item in outfit_items
         ]
-        
+
         # Calculate scores
         scores = calculate_outfit_score(body_shape, undertone, items_dict)
 
-        occasion_score = calculate_occasion_compatibility(normalized_occasion, outfit_items) if normalized_occasion else 0.75
+        occasion_score = (
+            calculate_occasion_compatibility(normalized_occasion, outfit_items)
+            if normalized_occasion
+            else 0.75
+        )
 
         weighted_score = (scores["overall"] * 0.85) + (occasion_score * 0.15)
 
         # Enforce minimum occasion quality when user explicitly asks for occasion
         if normalized_occasion and occasion_score < 0.45:
             continue
-        
+
         candidate = {
             "items": outfit_items,
             "score": weighted_score,
@@ -339,7 +355,7 @@ def generate_outfits(
         # Filter by minimum score
         if weighted_score >= min_score:
             scored_outfits.append(candidate)
-    
+
     # Sort by score (highest first)
     scored_outfits.sort(key=lambda x: x["score"], reverse=True)
 
@@ -348,9 +364,10 @@ def generate_outfits(
     if not scored_outfits and all_scored_outfits:
         all_scored_outfits.sort(key=lambda x: x["score"], reverse=True)
         return all_scored_outfits[:10]
-    
+
     # Return top 10
     return scored_outfits[:10]
+
 
 def get_outfit_recommendations(
     wardrobe_items: List[WardrobeItem],
@@ -358,51 +375,56 @@ def get_outfit_recommendations(
     user_undertone: str,
     occasion: Optional[str] = None,
     season: Optional[str] = None,
-    limit: int = 10
+    limit: int = 10,
 ) -> List[Dict]:
     """Get formatted outfit recommendations for a user"""
-    
+
     outfits = generate_outfits(
         wardrobe_items=wardrobe_items,
         body_shape=user_body_shape,
         undertone=user_undertone,
         occasion=occasion,
-        season=season
+        season=season,
     )
-    
+
     # Format response
     recommendations = []
     for idx, outfit in enumerate(outfits[:limit]):
-        recommendations.append({
-            "outfit_number": idx + 1,
-            "overall_score": round(outfit["score"], 2),
-            "color_harmony_score": round(outfit["color_score"], 2),
-            "body_shape_score": round(outfit["body_shape_score"], 2),
-            "undertone_score": round(outfit["undertone_score"], 2),
-            "occasion_score": round(outfit.get("occasion_score", 0.75), 2),
-            "occasion": outfit.get("occasion"),
-            "items": [
-                {
-                    "id": item.id,
-                    "type": item.clothing_type,
-                    "category": item.category,
-                    "color": item.color_primary,
-                    "pattern": item.pattern,
-                    "image_path": item.image_path
-                }
-                for item in outfit["items"]
-            ]
-        })
-    
+        recommendations.append(
+            {
+                "outfit_number": idx + 1,
+                "overall_score": round(outfit["score"], 2),
+                "color_harmony_score": round(outfit["color_score"], 2),
+                "body_shape_score": round(outfit["body_shape_score"], 2),
+                "undertone_score": round(outfit["undertone_score"], 2),
+                "occasion_score": round(outfit.get("occasion_score", 0.75), 2),
+                "occasion": outfit.get("occasion"),
+                "items": [
+                    {
+                        "id": item.id,
+                        "type": item.clothing_type,
+                        "category": item.category,
+                        "color": item.color_primary,
+                        "pattern": item.pattern,
+                        "image_path": item.image_path,
+                    }
+                    for item in outfit["items"]
+                ],
+            }
+        )
+
     return recommendations
+
 
 def is_rule_based() -> bool:
     """Return True: this module uses rule-based scoring and combinations."""
     return True
 
+
 def is_ai_based() -> bool:
     """Backward-compatible alias retained for callers that still use the old function name."""
     return False
+
 
 def list_model_indicators() -> List[str]:
     """Common keywords/files/deps to search for model or inference usage."""
@@ -420,6 +442,7 @@ def list_model_indicators() -> List[str]:
         "claude",
         "gemini",
     ]
+
 
 def list_ai_indicators() -> List[str]:
     """Backward-compatible alias retained for callers that still use the old function name."""

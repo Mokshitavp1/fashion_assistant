@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 def _register_verified_user(client, email: str, password: str, name: str = "Auth User"):
     register_response = client.post(
         "/auth/register",
@@ -48,7 +49,10 @@ def test_auth_flow_covers_registration_login_refresh_logout_and_reset(client) ->
         data={"email": email, "password": password},
     )
     assert unverified_login.status_code == 403
-    assert unverified_login.json()["detail"] == "Please confirm your email before signing in"
+    assert (
+        unverified_login.json()["detail"]
+        == "Please confirm your email before signing in"
+    )
 
     verify_response = client.post(
         "/auth/verify-email",

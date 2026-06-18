@@ -13,7 +13,6 @@ from database.database import SessionLocal
 from database import models
 from main import app, verify_token
 
-
 client = TestClient(app)
 
 
@@ -33,7 +32,7 @@ def test_user_feedback_summary_returns_recent_activity() -> None:
         outfit = models.Outfit(
             user_id=user.id,
             name="Test Outfit",
-            items_json='{"items": [{"id": 1, "quantity": 1}]}'
+            items_json='{"items": [{"id": 1, "quantity": 1}]}',
         )
         wardrobe_item = models.WardrobeItem(
             user_id=user.id,
@@ -50,9 +49,24 @@ def test_user_feedback_summary_returns_recent_activity() -> None:
         db.refresh(outfit)
         db.refresh(wardrobe_item)
 
-        db.add(models.OutfitRating(user_id=user.id, outfit_id=outfit.id, rating=5, comment="Great"))
-        db.add(models.RecommendationFeedback(user_id=user.id, recommendation_type="outfit", recommendation_id=str(outfit.id), helpful=1))
-        db.add(models.ItemUsage(user_id=user.id, item_id=wardrobe_item.id, action="worn", wear_count=2))
+        db.add(
+            models.OutfitRating(
+                user_id=user.id, outfit_id=outfit.id, rating=5, comment="Great"
+            )
+        )
+        db.add(
+            models.RecommendationFeedback(
+                user_id=user.id,
+                recommendation_type="outfit",
+                recommendation_id=str(outfit.id),
+                helpful=1,
+            )
+        )
+        db.add(
+            models.ItemUsage(
+                user_id=user.id, item_id=wardrobe_item.id, action="worn", wear_count=2
+            )
+        )
         db.commit()
 
         app.dependency_overrides[verify_token] = lambda: user.id

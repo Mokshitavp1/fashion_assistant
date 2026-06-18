@@ -19,7 +19,6 @@ from services.clothing_classifier import classify_clothing
 from services.secure_image_storage import store_encrypted_image
 from services.task_queue import celery_app
 
-
 load_dotenv(Path(__file__).resolve().with_name(".env"))
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 
@@ -65,7 +64,10 @@ def process_analyze_job(
             user_id=user_id,
             secret_key=SECRET_KEY,
             image_type="profile",
-            metadata={"width": int(image_array.shape[1]), "height": int(image_array.shape[0])},
+            metadata={
+                "width": int(image_array.shape[1]),
+                "height": int(image_array.shape[0]),
+            },
         )
 
         face_region = detect_face_region(image_array)
@@ -113,7 +115,9 @@ def process_wardrobe_add_job(
     season: str,
     image_b64: str,
 ) -> Dict[str, Any]:
-    def normalize_type_with_category(predicted_type: str, selected_category: str) -> str:
+    def normalize_type_with_category(
+        predicted_type: str, selected_category: str
+    ) -> str:
         predicted = (predicted_type or "other").strip().lower()
         category_norm = (selected_category or "").strip().lower()
 
@@ -146,11 +150,16 @@ def process_wardrobe_add_job(
             user_id=user_id,
             secret_key=SECRET_KEY,
             image_type="wardrobe",
-            metadata={"width": int(image_array.shape[1]), "height": int(image_array.shape[0])},
+            metadata={
+                "width": int(image_array.shape[1]),
+                "height": int(image_array.shape[0]),
+            },
         )
 
         classification = classify_clothing(image_array)
-        normalized_type = normalize_type_with_category(classification.get("type"), category)
+        normalized_type = normalize_type_with_category(
+            classification.get("type"), category
+        )
 
         wardrobe_item = crud.create_wardrobe_item(
             db=db,
@@ -196,22 +205,25 @@ def process_wardrobe_add_job(
 
 # ============ LEARNING SYSTEM TASKS ============
 
+
 @celery_app.task(name="worker_tasks.compute_metrics")
 def compute_metrics(lookback_days: int = 30) -> Dict[str, Any]:
     """
     Compute all model performance metrics. Called daily by Celery beat.
-    
+
     Args:
         lookback_days: Lookback period for feedback analysis
-    
+
     Returns:
         Summary of metrics computed
     """
     from services import model_metrics
-    
+
     db = SessionLocal()
     try:
-        print(f"[Celery] Starting metrics computation (lookback={lookback_days} days)...")
+        print(
+            f"[Celery] Starting metrics computation (lookback={lookback_days} days)..."
+        )
         result = model_metrics.compute_all_metrics(db)
         print(f"[Celery] Metrics computation complete: {result}")
         return result
@@ -226,15 +238,15 @@ def compute_metrics(lookback_days: int = 30) -> Dict[str, Any]:
 def retrain_all_models_task(lookback_days: int = 30) -> Dict[str, Any]:
     """
     Full model retraining pipeline. Called weekly by Celery beat.
-    
+
     Args:
         lookback_days: Feedback lookback period
-    
+
     Returns:
         Retraining result summary
     """
     from services import model_retrainer
-    
+
     db = SessionLocal()
     try:
         print(f"[Celery] Starting model retraining (lookback={lookback_days} days)...")

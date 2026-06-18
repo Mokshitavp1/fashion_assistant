@@ -34,7 +34,7 @@ MAX_IMAGES_PER_USER = int(os.getenv("MAX_IMAGES_PER_USER", "100"))
 
 # Ensure storage directory exists with restricted permissions
 os.makedirs(ENCRYPTED_STORAGE_DIR, exist_ok=True)
-if os.name == 'posix':  # Unix/Linux/macOS
+if os.name == "posix":  # Unix/Linux/macOS
     os.chmod(ENCRYPTED_STORAGE_DIR, 0o700)  # Owner only: rwx------
 
 
@@ -71,21 +71,21 @@ def store_encrypted_image(
     user_id: int,
     secret_key: str,
     image_type: str = "wardrobe",  # wardrobe, profile, analysis
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = None,
 ) -> Tuple[str, str]:
     """
     Store an encrypted image and return secure reference.
-    
+
     Args:
         image_bytes: Raw image data (JPEG/PNG bytes)
         user_id: Owner user ID
         secret_key: Application SECRET_KEY
         image_type: Category of image (wardrobe/profile/analysis)
         metadata: Optional metadata dict (stored unencrypted for quick lookup)
-    
+
     Returns:
         Tuple of (image_id, filename_for_db)
-    
+
     Raises:
         ValueError: If user exceeds max images or image is invalid
     """
@@ -93,21 +93,21 @@ def store_encrypted_image(
     image_array = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
     if image_array is None:
         raise ValueError("Invalid image file")
-    
+
     # Generate secure ID
     image_id = _generate_secure_image_id()
-    
+
     # Encrypt image data
     cipher = _get_fernet_cipher(user_id, secret_key)
     encrypted_data = cipher.encrypt(image_bytes)
-    
+
     # Write encrypted image
     image_path = _get_image_data_path(image_id)
     with open(image_path, "wb") as f:
         f.write(encrypted_data)
-    if os.name == 'posix':
+    if os.name == "posix":
         os.chmod(image_path, 0o600)  # Owner only: rw-------
-    
+
     # Write metadata (unencrypted but signed)
     meta_path = _get_image_metadata_path(image_id)
     meta_content = f"""id:{image_id}
@@ -119,36 +119,35 @@ hash:{hashlib.sha256(image_bytes).hexdigest()[:16]}
 """
     if metadata:
         meta_content += f"custom:{metadata}\n"
-    
+
     with open(meta_path, "w") as f:
         f.write(meta_content)
-    if os.name == 'posix':
+    if os.name == "posix":
         os.chmod(meta_path, 0o600)
-    
-    logger.info(f"Stored encrypted image {image_id} for user {user_id}, type={image_type}")
-    
+
+    logger.info(
+        f"Stored encrypted image {image_id} for user {user_id}, type={image_type}"
+    )
+
     # Return reference for database storage
     return image_id, f"encrypted://{image_id}"
 
 
 def retrieve_encrypted_image(
-    image_id: str,
-    user_id: int,
-    secret_key: str,
-    verify_ownership: bool = True
+    image_id: str, user_id: int, secret_key: str, verify_ownership: bool = True
 ) -> bytes:
     """
     Retrieve and decrypt image, verifying ownership.
-    
+
     Args:
         image_id: Secure image ID
         user_id: Requesting user ID (must own the image)
         secret_key: Application SECRET_KEY
         verify_ownership: If True, check that user owns this image
-    
+
     Returns:
         Decrypted image bytes (JPEG/PNG)
-    
+
     Raises:
         FileNotFoundError: Image not found
         PermissionError: User doesn't own this image
@@ -156,21 +155,27 @@ def retrieve_encrypted_image(
     """
     image_path = _get_image_data_path(image_id)
     meta_path = _get_image_metadata_path(image_id)
-    
+
     if not image_path.exists() or not meta_path.exists():
         logger.warning(f"Image {image_id} not found")
         raise FileNotFoundError(f"Image {image_id} not found")
-    
+
     # Verify ownership
     if verify_ownership:
         meta_content = meta_path.read_text()
-        meta_lines = {line.split(":", 1)[0]: line.split(":", 1)[1].strip() for line in meta_content.split("\n") if ":" in line}
-        
+        meta_lines = {
+            line.split(":", 1)[0]: line.split(":", 1)[1].strip()
+            for line in meta_content.split("\n")
+            if ":" in line
+        }
+
         stored_user_id = int(meta_lines.get("user_id", -1))
         if stored_user_id != user_id:
-            logger.warning(f"Unauthorized access attempt: user {user_id} tried to access image {image_id} owned by {stored_user_id}")
+            logger.warning(
+                f"Unauthorized access attempt: user {user_id} tried to access image {image_id} owned by {stored_user_id}"
+            )
             raise PermissionError(f"You don't have access to image {image_id}")
-    
+
     # Decrypt
     try:
         cipher = _get_fernet_cipher(user_id, secret_key)
@@ -184,39 +189,41 @@ def retrieve_encrypted_image(
 
 
 def delete_encrypted_image(
-    image_id: str,
-    user_id: int,
-    verify_ownership: bool = True
+    image_id: str, user_id: int, verify_ownership: bool = True
 ) -> bool:
     """
     Securely delete an encrypted image.
-    
+
     Args:
         image_id: Secure image ID
         user_id: Requesting user ID (must own the image)
         verify_ownership: If True, check that user owns this image
-    
+
     Returns:
         True if deletion successful
-    
+
     Raises:
         PermissionError: User doesn't own this image
         FileNotFoundError: Image not found
     """
     image_path = _get_image_data_path(image_id)
     meta_path = _get_image_metadata_path(image_id)
-    
+
     if not image_path.exists():
         raise FileNotFoundError(f"Image {image_id} not found")
-    
+
     # Verify ownership
     if verify_ownership and meta_path.exists():
         meta_content = meta_path.read_text()
-        meta_lines = {line.split(":", 1)[0]: line.split(":", 1)[1].strip() for line in meta_content.split("\n") if ":" in line}
+        meta_lines = {
+            line.split(":", 1)[0]: line.split(":", 1)[1].strip()
+            for line in meta_content.split("\n")
+            if ":" in line
+        }
         stored_user_id = int(meta_lines.get("user_id", -1))
         if stored_user_id != user_id:
             raise PermissionError(f"You don't have access to image {image_id}")
-    
+
     # Secure deletion: overwrite with random data before removing
     try:
         image_size = image_path.stat().st_size
@@ -234,22 +241,26 @@ def delete_encrypted_image(
 def cleanup_old_images(before_date: Optional[datetime] = None) -> int:
     """
     Remove images older than MAX_IMAGE_AGE_DAYS.
-    
+
     Args:
         before_date: If provided, delete images before this date; else use MAX_IMAGE_AGE_DAYS
-    
+
     Returns:
         Number of images deleted
     """
     if before_date is None:
         before_date = utcnow() - timedelta(days=MAX_IMAGE_AGE_DAYS)
-    
+
     deleted_count = 0
     try:
         for meta_path in Path(ENCRYPTED_STORAGE_DIR).glob("*.meta"):
             meta_content = meta_path.read_text()
-            meta_lines = {line.split(":", 1)[0]: line.split(":", 1)[1].strip() for line in meta_content.split("\n") if ":" in line}
-            
+            meta_lines = {
+                line.split(":", 1)[0]: line.split(":", 1)[1].strip()
+                for line in meta_content.split("\n")
+                if ":" in line
+            }
+
             uploaded_at_str = meta_lines.get("uploaded_at", "")
             try:
                 uploaded_at = datetime.fromisoformat(uploaded_at_str)
@@ -261,38 +272,42 @@ def cleanup_old_images(before_date: Optional[datetime] = None) -> int:
                 pass
     except Exception as e:
         logger.error(f"Cleanup failed: {str(e)}")
-    
+
     if deleted_count > 0:
         logger.info(f"Cleaned up {deleted_count} old images (before {before_date})")
-    
+
     return deleted_count
 
 
 def get_image_info(image_id: str, user_id: int) -> Optional[dict]:
     """
     Get metadata about an image without decrypting it.
-    
+
     Args:
         image_id: Secure image ID
         user_id: Requesting user ID
-    
+
     Returns:
         Metadata dict or None if not found
-    
+
     Raises:
         PermissionError: User doesn't own this image
     """
     meta_path = _get_image_metadata_path(image_id)
     if not meta_path.exists():
         return None
-    
+
     meta_content = meta_path.read_text()
-    meta_lines = {line.split(":", 1)[0]: line.split(":", 1)[1].strip() for line in meta_content.split("\n") if ":" in line}
-    
+    meta_lines = {
+        line.split(":", 1)[0]: line.split(":", 1)[1].strip()
+        for line in meta_content.split("\n")
+        if ":" in line
+    }
+
     stored_user_id = int(meta_lines.get("user_id", -1))
     if stored_user_id != user_id:
         raise PermissionError(f"You don't have access to image {image_id}")
-    
+
     return {
         "id": image_id,
         "user_id": stored_user_id,

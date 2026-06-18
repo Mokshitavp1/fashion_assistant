@@ -46,53 +46,59 @@ BODY_SHAPE_RULES = {
         "flattering_bottoms": ["bootcut", "wide_leg"],
         "avoid_tops": ["boxy", "straight"],
         "avoid_bottoms": ["straight_leg"],
-        "style_tips": ["Add curves with belts", "Create waist definition"]
+        "style_tips": ["Add curves with belts", "Create waist definition"],
     },
     "pear": {
         "flattering_tops": ["off-shoulder", "boat neck", "embellished"],
         "flattering_bottoms": ["A-line skirt", "wide_leg"],
         "avoid_tops": ["tight", "cowl neck"],
         "avoid_bottoms": ["skinny jeans"],
-        "style_tips": ["Highlight upper body", "Balance proportions"]
+        "style_tips": ["Highlight upper body", "Balance proportions"],
     },
     "inverted_triangle": {
         "flattering_tops": ["V-neck", "wrap", "ruffled"],
         "flattering_bottoms": ["bootcut", "A-line skirt"],
         "avoid_tops": ["padded shoulders", "halter neck"],
         "avoid_bottoms": ["skinny jeans"],
-        "style_tips": ["Add volume to lower body", "Define waist"]
+        "style_tips": ["Add volume to lower body", "Define waist"],
     },
     "hourglass": {
         "flattering_tops": ["fitted", "wrap", "V-neck"],
         "flattering_bottoms": ["high-waisted", "pencil skirt"],
         "avoid_tops": ["boxy", "cropped"],
         "avoid_bottoms": ["low-rise jeans"],
-        "style_tips": ["Emphasize waist", "Show off curves"]
+        "style_tips": ["Emphasize waist", "Show off curves"],
     },
     "apple": {
         "flattering_tops": ["empire waist", "A-line", "V-neck"],
         "flattering_bottoms": ["bootcut", "wide_leg"],
         "avoid_tops": ["tight", "cowl neck"],
         "avoid_bottoms": ["skinny jeans"],
-        "style_tips": ["Draw attention away from midsection", "Highlight legs"]
-    }
-}   
-def is_flattering_for_body_shape(body_shape: str, clothing_type: str, category: str) -> bool:
+        "style_tips": ["Draw attention away from midsection", "Highlight legs"],
+    },
+}
+
+
+def is_flattering_for_body_shape(
+    body_shape: str, clothing_type: str, category: str
+) -> bool:
     rules = BODY_SHAPE_RULES.get(body_shape)
     if not rules:
         return True  # Default to True if body shape not found
-    
+
     if category == "top":
         return clothing_type in rules["flattering_tops"]
     elif category == "bottom":
         return clothing_type in rules["flattering_bottoms"]
-    
-    return True  # Default to True for unknown category 
-def get_body_shape_score(body_shape: str, clothing_type: str, category: str) -> float:      
+
+    return True  # Default to True for unknown category
+
+
+def get_body_shape_score(body_shape: str, clothing_type: str, category: str) -> float:
     rules = BODY_SHAPE_RULES.get(body_shape)
     if not rules:
         return 0.7  # Neutral score if body shape not found
-    
+
     if category == "top":
         if clothing_type in rules["flattering_tops"]:
             return 1.0
@@ -103,27 +109,31 @@ def get_body_shape_score(body_shape: str, clothing_type: str, category: str) -> 
             return 1.0
         elif clothing_type in rules["avoid_bottoms"]:
             return 0.3
-    
+
     return 0.7  # Neutral score if neither flattering nor avoided
-def calculate_outfit_body_shape_score(body_shape: str, items: list) -> float:   
+
+
+def calculate_outfit_body_shape_score(body_shape: str, items: list) -> float:
     if not items:
         return 1.0  # Default to perfect score for empty outfit
-    
+
     total_score = 0.0
     for item in items:
         clothing_type = item.get("type")
         category = item.get("category")
         score = get_body_shape_score(body_shape, clothing_type, category)
         total_score += score
-    
+
     overall_score = total_score / len(items)
-    return overall_score    
+    return overall_score
+
+
 # Example usage:
-# outfit_items = [ 
+# outfit_items = [
 
 #     {"type": "fitted", "category": "top"},
-#     {"type": "bootcut", "category": "bottom"} 
+#     {"type": "bootcut", "category": "bottom"}
 # ]
 # score = calculate_outfit_body_shape_score("rectangle", outfit_items)
-# print(f"Outfit body shape compatibility score: {score}")  
-# Expected output: Outfit body shape compatibility score: 1.0   
+# print(f"Outfit body shape compatibility score: {score}")
+# Expected output: Outfit body shape compatibility score: 1.0

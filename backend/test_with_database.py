@@ -4,6 +4,7 @@ BASE_URL = "http://127.0.0.1:8000"
 EMAIL = "test_with_database@example.com"
 PASSWORD = "TestDbPass123"
 
+
 def main():
     # Test 1: Login or create a user
     print("=== Logging In / Creating User ===")
@@ -25,7 +26,7 @@ def main():
                 "name": "Test User",
                 "email": EMAIL,
                 "password": PASSWORD,
-            }
+            },
         )
         if response.status_code != 200:
             print(f"Error: {response.text}")
@@ -50,12 +51,12 @@ def main():
             with open(filename, "wb") as f:
                 f.write(img_resp.content)
 
-            with open(filename, 'rb') as f:
+            with open(filename, "rb") as f:
                 response = requests.post(
                     f"{BASE_URL}/users/{user_id}/analyze",
                     headers=headers,
-                    files={'image': f},
-                    data={'height': 170, 'weight': 65}
+                    files={"image": f},
+                    data={"height": 170, "weight": 65},
                 )
 
             if response.status_code == 200:

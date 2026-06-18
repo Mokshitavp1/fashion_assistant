@@ -16,9 +16,9 @@ ALLOWED_FILE_EXTENSIONS: set = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 # CORS Settings
 ALLOWED_ORIGINS: list = [
-    origin.strip() for origin in os.getenv(
-        "ALLOWED_ORIGINS",
-        "http://localhost:3000,http://localhost:5173"
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"
     ).split(",")
 ]
 
@@ -32,12 +32,16 @@ SECRET_KEY: str = os.getenv("SECRET_KEY", "")
 if not SECRET_KEY or len(SECRET_KEY) < 32:
     raise RuntimeError(
         "SECRET_KEY must be set and at least 32 characters long. "
-        "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+        'Generate one with: python -c "import secrets; print(secrets.token_urlsafe(48))"'
     )
 
 ALGORITHM: str = "HS256"
-ACCESS_TOKEN_EXPIRATION_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRATION_MINUTES", "15"))
-REFRESH_TOKEN_EXPIRATION_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRATION_DAYS", "7"))
+ACCESS_TOKEN_EXPIRATION_MINUTES: int = int(
+    os.getenv("ACCESS_TOKEN_EXPIRATION_MINUTES", "15")
+)
+REFRESH_TOKEN_EXPIRATION_DAYS: int = int(
+    os.getenv("REFRESH_TOKEN_EXPIRATION_DAYS", "7")
+)
 PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES: int = int(
     os.getenv("PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES", "30")
 )
@@ -56,7 +60,12 @@ SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "").strip()
 SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "").strip()
 SMTP_FROM_ADDRESS: str = os.getenv("SMTP_FROM_ADDRESS", SMTP_USERNAME).strip()
-SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").strip().lower() in {"1", "true", "yes", "on"}
+SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "true").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 
 # Inference/Worker Settings
 MAX_CONCURRENT_IMAGE_JOBS: int = int(os.getenv("MAX_CONCURRENT_IMAGE_JOBS", "4"))

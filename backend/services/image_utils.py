@@ -7,6 +7,8 @@
 import numpy as np
 import cv2
 from fastapi import UploadFile, HTTPException
+
+
 async def read_image_file(file: UploadFile) -> np.ndarray:
     try:
         file_bytes = await file.read()
@@ -17,5 +19,3 @@ async def read_image_file(file: UploadFile) -> np.ndarray:
         return image
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
-    
-    

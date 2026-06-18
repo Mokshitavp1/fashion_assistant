@@ -48,12 +48,16 @@ def parse_args() -> argparse.Namespace:
 
 def get_model(model_name: str, num_classes: int) -> nn.Module:
     if model_name == "mobilenet_v3_small":
-        model = models.mobilenet_v3_small(weights=models.MobileNet_V3_Small_Weights.DEFAULT)
+        model = models.mobilenet_v3_small(
+            weights=models.MobileNet_V3_Small_Weights.DEFAULT
+        )
         in_features = model.classifier[-1].in_features
         model.classifier[-1] = nn.Linear(in_features, num_classes)
         return model
     if model_name == "mobilenet_v3_large":
-        model = models.mobilenet_v3_large(weights=models.MobileNet_V3_Large_Weights.DEFAULT)
+        model = models.mobilenet_v3_large(
+            weights=models.MobileNet_V3_Large_Weights.DEFAULT
+        )
         in_features = model.classifier[-1].in_features
         model.classifier[-1] = nn.Linear(in_features, num_classes)
         return model

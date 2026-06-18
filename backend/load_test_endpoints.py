@@ -14,7 +14,6 @@ from database.database import SessionLocal
 from database import models
 from utils import utcnow
 
-
 BASE_URL = os.getenv("LOAD_BASE_URL", "http://127.0.0.1:8000")
 USERS = int(os.getenv("LOAD_USERS", "8"))
 ANALYZE_ROUNDS = int(os.getenv("LOAD_ANALYZE_ROUNDS", "1"))
@@ -128,7 +127,9 @@ async def _post_wardrobe(
                 detail = response.json().get("detail", "")
             except Exception:
                 detail = response.text[:120]
-        return RequestResult("wardrobe_add", response.status_code, elapsed_ms, ok, detail)
+        return RequestResult(
+            "wardrobe_add", response.status_code, elapsed_ms, ok, detail
+        )
     except Exception as exc:
         elapsed_ms = (time.perf_counter() - start) * 1000
         return RequestResult("wardrobe_add", 0, elapsed_ms, False, str(exc))
@@ -143,7 +144,10 @@ async def _run_phase(
     semaphore = asyncio.Semaphore(MAX_INFLIGHT)
     results: List[RequestResult] = []
 
-    async with httpx.AsyncClient(base_url=BASE_URL, timeout=REQUEST_TIMEOUT_SECONDS) as client:
+    async with httpx.AsyncClient(
+        base_url=BASE_URL, timeout=REQUEST_TIMEOUT_SECONDS
+    ) as client:
+
         async def one_call(user_id: int, token: str):
             async with semaphore:
                 return await operation(client, user_id, token)
@@ -186,9 +190,15 @@ def _summarize(results: List[RequestResult]) -> Dict[str, object]:
             "mean_all": statistics.mean(elapsed_all) if elapsed_all else 0.0,
             "p50_all": _percentile(sorted(elapsed_all), 0.50) if elapsed_all else 0.0,
             "p95_all": _percentile(sorted(elapsed_all), 0.95) if elapsed_all else 0.0,
-            "mean_success": statistics.mean(elapsed_success) if elapsed_success else 0.0,
-            "p50_success": _percentile(sorted(elapsed_success), 0.50) if elapsed_success else 0.0,
-            "p95_success": _percentile(sorted(elapsed_success), 0.95) if elapsed_success else 0.0,
+            "mean_success": (
+                statistics.mean(elapsed_success) if elapsed_success else 0.0
+            ),
+            "p50_success": (
+                _percentile(sorted(elapsed_success), 0.50) if elapsed_success else 0.0
+            ),
+            "p95_success": (
+                _percentile(sorted(elapsed_success), 0.95) if elapsed_success else 0.0
+            ),
         },
         "failure_details": details,
     }

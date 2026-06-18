@@ -29,7 +29,9 @@ def test_color_harmony_detects_complementary_colors() -> None:
 
 
 def test_outfit_color_score_averages_pairwise_harmony() -> None:
-    score = ch.calculate_outfit_color_score([(255, 0, 0), (0, 255, 255), (255, 255, 255)])
+    score = ch.calculate_outfit_color_score(
+        [(255, 0, 0), (0, 255, 255), (255, 255, 255)]
+    )
 
     assert score == 1.0
 

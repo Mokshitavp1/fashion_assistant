@@ -57,7 +57,9 @@ def _load_registry() -> Dict[str, Any]:
 
 def _save_registry(registry: Dict[str, Any]) -> None:
     _ensure_paths()
-    REGISTRY_PATH.write_text(json.dumps(registry, indent=2, sort_keys=True), encoding="utf-8")
+    REGISTRY_PATH.write_text(
+        json.dumps(registry, indent=2, sort_keys=True), encoding="utf-8"
+    )
 
 
 def _append_jsonl(path: Path, payload: Dict[str, Any]) -> None:
@@ -165,7 +167,11 @@ def promote_model_version(model_name: str, version: str) -> Dict[str, Any]:
             "previous_version": previous_version,
         },
     )
-    return {"model_name": model_name, "active_version": version, "previous_version": previous_version}
+    return {
+        "model_name": model_name,
+        "active_version": version,
+        "previous_version": previous_version,
+    }
 
 
 def rollback_model_version(model_name: str) -> Dict[str, Any]:

@@ -11,7 +11,7 @@ from . import feedback
 __all__ = [
     "auth",
     "wardrobe",
-    "analysis", 
+    "analysis",
     "user",
     "images",
     "jobs",

@@ -69,37 +69,43 @@ def main():
 
     if response.status_code == 200:
         result = response.json()
-        analysis = result['analysis']
-        
+        analysis = result["analysis"]
+
         print(f"\n📊 Wardrobe Analysis for User #{user_id}")
         print(f"Body Shape: {result['body_shape']}")
         print(f"Undertone: {result['undertone']}")
         print(f"\nTotal Items: {analysis['total_items']}")
         print(f"✅ Items to Keep: {analysis['keep_count']}")
         print(f"🗑️  Items to Discard: {analysis['discard_count']}")
-        
-        if analysis['items_to_discard']:
-            print("\n" + "="*50)
+
+        if analysis["items_to_discard"]:
+            print("\n" + "=" * 50)
             print("🗑️  ITEMS RECOMMENDED FOR DISCARD:")
-            print("="*50)
-            for item in analysis['items_to_discard']:
-                print(f"\n❌ {item['item_color']} {item['item_type']} (ID: {item['item_id']})")
+            print("=" * 50)
+            for item in analysis["items_to_discard"]:
+                print(
+                    f"\n❌ {item['item_color']} {item['item_type']} (ID: {item['item_id']})"
+                )
                 print(f"   Category: {item['item_category']}")
                 print(f"   Overall Score: {item['overall_score']}/1.0")
                 print(f"   📊 Breakdown:")
                 print(f"      - Undertone Match: {item['undertone_score']}")
                 print(f"      - Body Shape Fit: {item['body_shape_score']}")
-                print(f"      - Versatility: {item['versatility_score']} ({item['potential_outfits']} outfits)")
+                print(
+                    f"      - Versatility: {item['versatility_score']} ({item['potential_outfits']} outfits)"
+                )
                 print(f"   📝 Reasons:")
-                for reason in item['reasons']:
+                for reason in item["reasons"]:
                     print(f"      • {reason}")
-        
-        if analysis['items_to_keep']:
-            print("\n" + "="*50)
+
+        if analysis["items_to_keep"]:
+            print("\n" + "=" * 50)
             print("✅ ITEMS TO KEEP:")
-            print("="*50)
-            for item in analysis['items_to_keep'][:5]:  # Show top 5
-                print(f"\n✅ {item['item_color']} {item['item_type']} (ID: {item['item_id']})")
+            print("=" * 50)
+            for item in analysis["items_to_keep"][:5]:  # Show top 5
+                print(
+                    f"\n✅ {item['item_color']} {item['item_type']} (ID: {item['item_id']})"
+                )
                 print(f"   Overall Score: {item['overall_score']}/1.0")
                 print(f"   Can create {item['potential_outfits']} outfit(s)")
     else:

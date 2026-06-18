@@ -9,7 +9,9 @@ from services import outfit_generator as og
 from services import shopping_assistant as sa
 
 
-def _item(item_id: int, type_: str, category: str, color: str, pattern: str = "solid") -> WardrobeItem:
+def _item(
+    item_id: int, type_: str, category: str, color: str, pattern: str = "solid"
+) -> WardrobeItem:
     return WardrobeItem(
         id=item_id,
         clothing_type=type_,
@@ -50,7 +52,10 @@ def test_discard_recommendations_identify_weak_item() -> None:
     assert result["total_items"] == 3
     assert result["discard_count"] >= 1
     assert result["items_to_discard"]
-    assert result["items_to_discard"][0]["overall_score"] <= result["items_to_keep"][0]["overall_score"]
+    assert (
+        result["items_to_discard"][0]["overall_score"]
+        <= result["items_to_keep"][0]["overall_score"]
+    )
 
 
 def test_shopping_helpers_detect_match_duplicate_and_recommendation() -> None:
@@ -63,7 +68,9 @@ def test_shopping_helpers_detect_match_duplicate_and_recommendation() -> None:
     matches = sa.find_matching_wardrobe_items("red", "top", wardrobe)
     assert matches
 
-    compatibility = sa.calculate_wardrobe_compatibility_score(matches, total_relevant_items=1)
+    compatibility = sa.calculate_wardrobe_compatibility_score(
+        matches, total_relevant_items=1
+    )
     assert 0 <= compatibility["compatibility_score"] <= 1
     assert compatibility["match_count"] >= 1
 

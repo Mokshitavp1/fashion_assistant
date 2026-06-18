@@ -6,7 +6,6 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
-
 ROOT = Path(__file__).resolve().parents[2]
 TEST_DB_PATH = ROOT / "backend" / "tests" / "test_auth.db"
 TEST_DB_URL = f"sqlite:///{TEST_DB_PATH.as_posix()}"
@@ -64,7 +63,9 @@ def isolate_rate_limits(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture()
 def client() -> TestClient:
-    return TestClient(app_module.app, headers={"X-Test-Client-Id": f"pytest-{uuid.uuid4()}"})
+    return TestClient(
+        app_module.app, headers={"X-Test-Client-Id": f"pytest-{uuid.uuid4()}"}
+    )
 
 
 def make_png_bytes(color: tuple[int, int, int] = (255, 0, 0)) -> bytes:

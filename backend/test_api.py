@@ -27,6 +27,8 @@ def get_auth_headers():
 
 
 print("Testing server...")
+
+
 def main():
     print("Testing server...")
     response = requests.get(f"{BASE_URL}/")

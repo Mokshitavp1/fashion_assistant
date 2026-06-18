@@ -41,7 +41,9 @@ def test_profile_endpoint_requires_auth(client) -> None:
     assert response.json()["detail"] == "Missing authorization token"
 
 
-def test_authenticated_analyze_updates_profile_and_get_user_returns_saved_data(client, monkeypatch) -> None:
+def test_authenticated_analyze_updates_profile_and_get_user_returns_saved_data(
+    client, monkeypatch
+) -> None:
     email = "profile.api.user@gmail.com"
     password = "ProfileApi123"
     user_id, access_token, _ = _register_and_login(client, email, password)
@@ -65,7 +67,9 @@ def test_authenticated_analyze_updates_profile_and_get_user_returns_saved_data(c
 
     monkeypatch.setattr(app_module, "run_bounded_image_job", run_immediately)
     monkeypatch.setattr(app_module, "_analyze_skin_tone", fake_skin_tone_analysis)
-    monkeypatch.setattr(app_module, "classify_body_shape_with_bmi", fake_body_shape_analysis)
+    monkeypatch.setattr(
+        app_module, "classify_body_shape_with_bmi", fake_body_shape_analysis
+    )
     monkeypatch.setattr(app_module, "store_encrypted_image", fake_store_encrypted_image)
 
     analyze_response = client.post(

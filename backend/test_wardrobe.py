@@ -33,25 +33,22 @@ def main():
     print("=== Downloading Test Image ===")
     img_url = "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400"  # T-shirt image
     img_response = requests.get(img_url)
-    with open('test_clothing.jpg', 'wb') as f:
+    with open("test_clothing.jpg", "wb") as f:
         f.write(img_response.content)
     print("✅ Test image downloaded")
 
     # Test 1: Add clothing item
     print("\n=== Adding Clothing Item ===")
-    with open('test_clothing.jpg', 'rb') as f:
+    with open("test_clothing.jpg", "rb") as f:
         response = requests.post(
             f"{BASE_URL}/users/{user_id}/wardrobe/add",
             headers=headers,
-            files={'image': f},
-            data={
-                'category': 'top',
-                'season': 'summer'
-            }
+            files={"image": f},
+            data={"category": "top", "season": "summer"},
         )
         print(f"Status Code: {response.status_code}")
         print(f"Response Text: {response.text}")  # Show raw response
-        
+
         if response.status_code == 200:
             print("✅ Item added!")
             result = response.json()
@@ -67,8 +64,10 @@ def main():
     if response.status_code == 200:
         result = response.json()
         print(f"✅ Total items: {result['total_items']}")
-        for item in result['items']:
-            print(f"  - {item['category']}: {item['color_primary']} {item['type']} ({item['pattern']})")
+        for item in result["items"]:
+            print(
+                f"  - {item['category']}: {item['color_primary']} {item['type']} ({item['pattern']})"
+            )
     else:
         print(f"❌ Error: {response.text}")
 

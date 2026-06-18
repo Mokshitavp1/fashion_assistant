@@ -14,9 +14,13 @@ import cv2
 from fastapi import HTTPException
 import numpy as np
 from sklearn.cluster import KMeans
+
+
 def detect_face_region(image: cv2.Mat) -> cv2.Mat:
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
     faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5)
 
     if len(faces) == 0:
@@ -25,8 +29,9 @@ def detect_face_region(image: cv2.Mat) -> cv2.Mat:
     # Select the largest detected face
     largest_face = max(faces, key=lambda rect: rect[2] * rect[3])
     x, y, w, h = largest_face
-    face_region = image[y:y+h, x:x+w]
+    face_region = image[y : y + h, x : x + w]
     return face_region
+
 
 def extract_dominant_skin_color(face_image: cv2.Mat) -> tuple:
     pixels = face_image.reshape((-1, 3))
@@ -34,6 +39,8 @@ def extract_dominant_skin_color(face_image: cv2.Mat) -> tuple:
     kmeans.fit(pixels)
     dominant_color = kmeans.cluster_centers_[np.argmax(np.bincount(kmeans.labels_))]
     return tuple(map(int, dominant_color))
+
+
 # write a function classify_undertone that:
 # - accepts an (R, G, B) skin color tuple
 # - classifies undertone as "warm", "cool", or "neutral"
@@ -47,7 +54,9 @@ def classify_undertone(skin_color: tuple) -> str:
         return "cool"
     else:
         return "neutral"
-def classify_skin_undertone(face_image: cv2.Mat) -> str: 
+
+
+def classify_skin_undertone(face_image: cv2.Mat) -> str:
     skin_color = extract_dominant_skin_color(face_image)
     undertone = classify_undertone(skin_color)
-    return undertone   
+    return undertone

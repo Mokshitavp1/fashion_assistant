@@ -10,10 +10,7 @@ logger = logging.getLogger(__name__)
 
 # Use environment variable for database URL (secure)
 # Fallback to localhost for local development only
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite:///./backend/clothing_database.db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./backend/clothing_database.db")
 ENVIRONMENT = os.getenv("ENV", "development").lower()
 IS_DEV_ENV = ENVIRONMENT in {"dev", "development", "local", "test"}
 
@@ -26,6 +23,7 @@ if not IS_DEV_ENV and DATABASE_URL.startswith("sqlite"):
     raise RuntimeError(
         "SQLite is not supported in production. Set DATABASE_URL to a managed MySQL/PostgreSQL instance."
     )
+
 
 def ensure_mysql_db_exists(db_url: str):
     """Only run this in development - production DBs should be managed by migrations"""
@@ -42,10 +40,13 @@ def ensure_mysql_db_exists(db_url: str):
             database=None,
         )
         with conn.cursor() as cur:
-            cur.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+            cur.execute(
+                f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+            )
         conn.close()
     except Exception as e:
         logger.warning("Could not create database", exc_info=e)
+
 
 # Only create database in development/local environments
 if IS_DEV_ENV:
@@ -60,7 +61,7 @@ if DATABASE_URL.startswith("mysql"):
         pool_size=DB_POOL_SIZE,
         max_overflow=DB_MAX_OVERFLOW,
         pool_timeout=DB_POOL_TIMEOUT,
-        connect_args={"charset": "utf8mb4"}
+        connect_args={"charset": "utf8mb4"},
     )
 elif DATABASE_URL.startswith("postgresql"):
     engine = create_engine(
@@ -72,11 +73,14 @@ elif DATABASE_URL.startswith("postgresql"):
         pool_timeout=DB_POOL_TIMEOUT,
     )
 else:
-    sqlite_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    sqlite_connect_args = (
+        {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    )
     engine = create_engine(DATABASE_URL, connect_args=sqlite_connect_args)
 
 
 if DATABASE_URL.startswith("sqlite"):
+
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
@@ -84,6 +88,7 @@ if DATABASE_URL.startswith("sqlite"):
         cursor.execute("PRAGMA synchronous=NORMAL;")
         cursor.execute("PRAGMA busy_timeout=5000;")
         cursor.close()
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

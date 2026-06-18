@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 import logging
@@ -28,8 +29,7 @@ logger = logging.getLogger(__name__)
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 # Initialize database
@@ -50,30 +50,44 @@ def ensure_auth_schema() -> None:
     """Backfill auth schema for existing databases."""
     inspector = inspect(engine)
     users_columns = {column["name"] for column in inspector.get_columns("users")}
-    
+
     if "password_hash" not in users_columns:
         with engine.begin() as connection:
             if engine.dialect.name == "sqlite":
                 connection.execute(
-                    text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) DEFAULT '' NOT NULL")
+                    text(
+                        "ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) DEFAULT '' NOT NULL"
+                    )
                 )
             else:
                 connection.execute(
-                    text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT ''")
+                    text(
+                        "ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NOT NULL DEFAULT ''"
+                    )
                 )
 
     user_alterations = []
     if "email_verified" not in users_columns:
         if engine.dialect.name == "sqlite":
-            user_alterations.append("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0")
+            user_alterations.append(
+                "ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0"
+            )
         else:
-            user_alterations.append("ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT 0")
+            user_alterations.append(
+                "ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT 0"
+            )
     if "email_verification_token_hash" not in users_columns:
-        user_alterations.append("ALTER TABLE users ADD COLUMN email_verification_token_hash VARCHAR(255)")
+        user_alterations.append(
+            "ALTER TABLE users ADD COLUMN email_verification_token_hash VARCHAR(255)"
+        )
     if "email_verification_expires_at" not in users_columns:
-        user_alterations.append("ALTER TABLE users ADD COLUMN email_verification_expires_at DATETIME")
+        user_alterations.append(
+            "ALTER TABLE users ADD COLUMN email_verification_expires_at DATETIME"
+        )
     if "email_verified_at" not in users_columns:
-        user_alterations.append("ALTER TABLE users ADD COLUMN email_verified_at DATETIME")
+        user_alterations.append(
+            "ALTER TABLE users ADD COLUMN email_verified_at DATETIME"
+        )
 
     if user_alterations:
         with engine.begin() as connection:
@@ -84,16 +98,26 @@ def ensure_auth_schema() -> None:
     if "refresh_tokens" not in tables:
         return
 
-    refresh_columns = {column["name"] for column in inspector.get_columns("refresh_tokens")}
+    refresh_columns = {
+        column["name"] for column in inspector.get_columns("refresh_tokens")
+    }
     alterations = []
     if "last_used_at" not in refresh_columns:
-        alterations.append("ALTER TABLE refresh_tokens ADD COLUMN last_used_at DATETIME")
+        alterations.append(
+            "ALTER TABLE refresh_tokens ADD COLUMN last_used_at DATETIME"
+        )
     if "user_agent" not in refresh_columns:
-        alterations.append("ALTER TABLE refresh_tokens ADD COLUMN user_agent VARCHAR(255)")
+        alterations.append(
+            "ALTER TABLE refresh_tokens ADD COLUMN user_agent VARCHAR(255)"
+        )
     if "ip_address" not in refresh_columns:
-        alterations.append("ALTER TABLE refresh_tokens ADD COLUMN ip_address VARCHAR(64)")
+        alterations.append(
+            "ALTER TABLE refresh_tokens ADD COLUMN ip_address VARCHAR(64)"
+        )
     if "revoked_reason" not in refresh_columns:
-        alterations.append("ALTER TABLE refresh_tokens ADD COLUMN revoked_reason VARCHAR(100)")
+        alterations.append(
+            "ALTER TABLE refresh_tokens ADD COLUMN revoked_reason VARCHAR(100)"
+        )
 
     if alterations:
         with engine.begin() as connection:
@@ -108,7 +132,7 @@ ensure_auth_schema()
 app = FastAPI(
     title="Fashion App API",
     version="1.0.0",
-    description="AI-powered fashion recommendation and wardrobe management API"
+    description="AI-powered fashion recommendation and wardrobe management API",
 )
 
 # Rate limiting
@@ -121,7 +145,7 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
     """Handle rate limit exceeded errors."""
     return JSONResponse(
         status_code=429,
-        content={"detail": "Too many requests. Please try again later."}
+        content={"detail": "Too many requests. Please try again later."},
     )
 
 
@@ -150,6 +174,7 @@ app.include_router(auth.router)
 
 # ============ HEALTH CHECK ============
 
+
 @app.get("/", tags=["health"])
 async def health_check() -> dict:
     """Health check endpoint."""
@@ -157,6 +182,7 @@ async def health_check() -> dict:
 
 
 # ============ STARTUP/SHUTDOWN ============
+
 
 @app.on_event("startup")
 async def startup_event() -> None:
@@ -172,10 +198,5 @@ async def shutdown_event() -> None:
 
 if __name__ == "__main__":
     import uvicorn
-    
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

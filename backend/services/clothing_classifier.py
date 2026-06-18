@@ -14,14 +14,15 @@ try:
 except Exception:  # pragma: no cover - runtime dependency fallback
     pipeline = None
 
+
 def extract_clothing_colors(image: cv2.Mat, n_colors=3):
     """
     Extract dominant colors from clothing image using k-means clustering.
-    
+
     Args:
         image: OpenCV BGR image
         n_colors: Number of dominant colors to extract
-        
+
     Returns:
         list: List of RGB color tuples sorted by dominance
     """
@@ -39,10 +40,12 @@ def extract_clothing_colors(image: cv2.Mat, n_colors=3):
     g = bgr[:, :, 1]
     r = bgr[:, :, 2]
     near_white = (
-        (r > 210) & (g > 210) & (b > 210) &
-        (sat < 40) &
-        (np.abs(r.astype(np.int16) - g.astype(np.int16)) < 25) &
-        (np.abs(g.astype(np.int16) - b.astype(np.int16)) < 25)
+        (r > 210)
+        & (g > 210)
+        & (b > 210)
+        & (sat < 40)
+        & (np.abs(r.astype(np.int16) - g.astype(np.int16)) < 25)
+        & (np.abs(g.astype(np.int16) - b.astype(np.int16)) < 25)
     )
 
     # Keep pixels that are not washed-out background and also keep darker neutrals.
@@ -66,14 +69,20 @@ def extract_clothing_colors(image: cv2.Mat, n_colors=3):
         cg = center_crop[:, :, 1]
         cr = center_crop[:, :, 2]
         center_near_white = (
-            (cr > 210) & (cg > 210) & (cb > 210) &
-            (center_sat < 40) &
-            (np.abs(cr.astype(np.int16) - cg.astype(np.int16)) < 25) &
-            (np.abs(cg.astype(np.int16) - cb.astype(np.int16)) < 25)
+            (cr > 210)
+            & (cg > 210)
+            & (cb > 210)
+            & (center_sat < 40)
+            & (np.abs(cr.astype(np.int16) - cg.astype(np.int16)) < 25)
+            & (np.abs(cg.astype(np.int16) - cb.astype(np.int16)) < 25)
         )
         center_mask = ((center_sat >= 30) | (center_val <= 190)) & (~center_near_white)
         filtered_center = center_crop[center_mask]
-        pixels_bgr = filtered_center if filtered_center.shape[0] >= 120 else center_crop.reshape((-1, 3))
+        pixels_bgr = (
+            filtered_center
+            if filtered_center.shape[0] >= 120
+            else center_crop.reshape((-1, 3))
+        )
 
     if pixels_bgr.shape[0] == 0:
         pixels_bgr = image_resized.reshape((-1, 3))
@@ -86,31 +95,32 @@ def extract_clothing_colors(image: cv2.Mat, n_colors=3):
     # Apply k-means clustering
     kmeans = KMeans(n_clusters=clusters, n_init=10, random_state=42)
     kmeans.fit(pixels)
-    
+
     # Get the colors and their counts
     colors = kmeans.cluster_centers_
     labels = kmeans.labels_
     counts = Counter(labels)
-    
+
     # Sort colors by frequency
     sorted_colors = [colors[i] for i, count in counts.most_common(clusters)]
-    
+
     # Convert BGR to RGB
     rgb_colors = []
     for color in sorted_colors:
         # Convert from BGR to RGB and round to integers
         rgb = (int(color[2]), int(color[1]), int(color[0]))
         rgb_colors.append(rgb)
-    
+
     return rgb_colors
+
 
 def rgb_to_color_name(rgb: tuple) -> str:
     """
     Map RGB values to basic color names.
-    
+
     Args:
         rgb: RGB color tuple (r, g, b)
-        
+
     Returns:
         str: Color name
     """
@@ -152,6 +162,7 @@ def rgb_to_color_name(rgb: tuple) -> str:
         return "pink"
 
     return "multicolor"
+
 
 @lru_cache(maxsize=1)
 def _get_image_classifier():
@@ -222,7 +233,9 @@ def _extract_clothing_region(image: cv2.Mat) -> tuple[cv2.Mat, dict]:
     """
     debug = {
         "used_crop": False,
-        "detector_model": os.getenv("HF_CLOTHING_DETECTOR_MODEL", "facebook/detr-resnet-50"),
+        "detector_model": os.getenv(
+            "HF_CLOTHING_DETECTOR_MODEL", "facebook/detr-resnet-50"
+        ),
         "detector_score": None,
         "crop_box": None,
     }
@@ -423,13 +436,15 @@ def _predict_with_model(image: cv2.Mat) -> dict:
     result["pattern"] = predicted_pattern
     return result
 
+
 def _is_probably_denim(rgb: tuple) -> bool:
     """Heuristic: blue-dominant and moderate brightness implies denim-like color."""
     if not rgb or len(rgb) != 3:
         return False
     r, g, b = rgb
     # require blue noticeably higher than red/green and reasonably bright
-    return (b > r + 30 and b > g + 30 and b > 80)
+    return b > r + 30 and b > g + 30 and b > 80
+
 
 def classify_clothing(image: cv2.Mat) -> dict:
     """
@@ -442,23 +457,25 @@ def classify_clothing(image: cv2.Mat) -> dict:
     model_result = _predict_with_model(clothing_region)
     model_type = model_result["type"]
     model_pattern = model_result["pattern"]
-    
+
     # Extract dominant colors
     colors = extract_clothing_colors(clothing_region, n_colors=3)
-    
+
     # Get color names
     color_primary = rgb_to_color_name(colors[0]) if colors else "multicolor"
     color_secondary = rgb_to_color_name(colors[1]) if len(colors) > 1 else None
-    
+
     # Keep denim color heuristic to refine generic bottom predictions.
     mapped_type = model_type
     if mapped_type == "bottom" and colors and _is_probably_denim(colors[0]):
         mapped_type = "jeans"
-    
+
     return {
         "type": mapped_type,
         "color_primary": color_primary,
-        "color_secondary": color_secondary if color_secondary != color_primary else None,
+        "color_secondary": (
+            color_secondary if color_secondary != color_primary else None
+        ),
         "pattern": model_pattern,
         "rgb_colors": colors,
         "model_confidence": model_result["model_confidence"],

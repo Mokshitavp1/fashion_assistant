@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 
 def validate_password(password: str) -> None:
     """Validate password meets security requirements.
-    
+
     Args:
         password: Password string to validate
-        
+
     Raises:
         ValueError: If password doesn't meet requirements
     """
@@ -58,10 +58,10 @@ def validate_password(password: str) -> None:
 
 def hash_password(password: str) -> str:
     """Hash password using PBKDF2.
-    
+
     Args:
         password: Plain text password
-        
+
     Returns:
         Hashed password in format: pbkdf2_sha256$iterations$salt$hash
     """
@@ -78,11 +78,11 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str, stored_hash: str) -> bool:
     """Verify password against stored hash.
-    
+
     Args:
         password: Plain text password to verify
         stored_hash: Stored PBKDF2 hash
-        
+
     Returns:
         True if password matches, False otherwise
     """
@@ -103,7 +103,7 @@ def verify_password(password: str, stored_hash: str) -> bool:
 
 def create_email_verification_token() -> Tuple[str, str, datetime]:
     """Create email verification token.
-    
+
     Returns:
         Tuple of (raw_token, token_hash, expires_at)
     """
@@ -119,10 +119,10 @@ def create_email_verification_token() -> Tuple[str, str, datetime]:
 
 def hash_email_verification_token(token: str) -> str:
     """Hash email verification token.
-    
+
     Args:
         token: Raw verification token
-        
+
     Returns:
         Hashed token
     """
@@ -135,11 +135,11 @@ def hash_email_verification_token(token: str) -> str:
 
 def send_verification_code_email(recipient_email: str, verification_code: str) -> None:
     """Send verification code email.
-    
+
     Args:
         recipient_email: Recipient email address
         verification_code: Verification code to send
-        
+
     Raises:
         RuntimeError: If SMTP credentials not configured in production
     """
@@ -157,15 +157,13 @@ def send_verification_code_email(recipient_email: str, verification_code: str) -
     message["Subject"] = "Your Fashion App confirmation code"
     message["From"] = SMTP_FROM_ADDRESS or SMTP_USERNAME
     message["To"] = recipient_email
-    message.set_content(
-        f"""Your confirmation code is below.
+    message.set_content(f"""Your confirmation code is below.
 
 Confirmation code: {verification_code}
 
 This code expires in {EMAIL_VERIFICATION_EXPIRATION_HOURS} hours.
 If you did not request this, you can ignore this email.
-"""
-    )
+""")
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
         if SMTP_USE_TLS:
@@ -174,14 +172,16 @@ If you did not request this, you can ignore this email.
         server.send_message(message)
 
 
-def create_token(user_id: int, token_type: str, expires_delta: timedelta) -> Dict[str, Any]:
+def create_token(
+    user_id: int, token_type: str, expires_delta: timedelta
+) -> Dict[str, Any]:
     """Create JWT token payload.
-    
+
     Args:
         user_id: User ID
         token_type: Type of token ('access', 'refresh', 'password_reset')
         expires_delta: Token expiration delta
-        
+
     Returns:
         Token payload dictionary
     """
@@ -199,10 +199,10 @@ def create_token(user_id: int, token_type: str, expires_delta: timedelta) -> Dic
 
 def encode_token(payload: Dict[str, Any]) -> str:
     """Encode token payload to JWT string.
-    
+
     Args:
         payload: Token payload
-        
+
     Returns:
         Encoded JWT token
     """
@@ -211,10 +211,10 @@ def encode_token(payload: Dict[str, Any]) -> str:
 
 def create_access_token(user_id: int) -> str:
     """Create access token.
-    
+
     Args:
         user_id: User ID
-        
+
     Returns:
         Encoded JWT access token
     """
@@ -228,10 +228,10 @@ def create_access_token(user_id: int) -> str:
 
 def create_refresh_token(user_id: int) -> Tuple[str, str, datetime]:
     """Create refresh token.
-    
+
     Args:
         user_id: User ID
-        
+
     Returns:
         Tuple of (encoded_token, jti, expiration_datetime)
     """
@@ -246,10 +246,10 @@ def create_refresh_token(user_id: int) -> Tuple[str, str, datetime]:
 
 def create_password_reset_token(user_id: int) -> str:
     """Create password reset token.
-    
+
     Args:
         user_id: User ID
-        
+
     Returns:
         Encoded JWT password reset token
     """
@@ -268,26 +268,26 @@ def build_auth_response(
     previous_refresh_jti: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build authentication response with tokens.
-    
+
     Args:
         db: Database session
         user_id: User ID
         request: FastAPI request object (optional)
         previous_refresh_jti: Previous JTI to revoke (optional)
-        
+
     Returns:
         Dictionary with tokens and user info
     """
     from utils import get_remote_address
-    
+
     refresh_token, refresh_jti, refresh_exp = create_refresh_token(user_id)
     user_agent = (
-        request.headers.get("user-agent")[:255] 
-        if request and request.headers.get("user-agent") 
+        request.headers.get("user-agent")[:255]
+        if request and request.headers.get("user-agent")
         else None
     )
     ip_address = get_remote_address(request) if request else None
-    
+
     crud.create_refresh_token(
         db,
         user_id=user_id,
@@ -296,7 +296,7 @@ def build_auth_response(
         user_agent=user_agent,
         ip_address=ip_address,
     )
-    
+
     if previous_refresh_jti:
         crud.revoke_refresh_token(
             db,
@@ -316,19 +316,19 @@ def build_auth_response(
 
 def decode_token(token: str, expected_type: str) -> Dict[str, Any]:
     """Decode and validate JWT token.
-    
+
     Args:
         token: JWT token string
         expected_type: Expected token type
-        
+
     Returns:
         Token payload
-        
+
     Raises:
         jwt.InvalidTokenError: If token is invalid
     """
     from fastapi import HTTPException
-    
+
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     token_type = payload.get("type")
     if token_type != expected_type:
@@ -338,18 +338,18 @@ def decode_token(token: str, expected_type: str) -> Dict[str, Any]:
 
 def decode_access_user_id(token: str) -> int:
     """Decode access token and extract user ID.
-    
+
     Args:
         token: JWT access token
-        
+
     Returns:
         User ID
-        
+
     Raises:
         HTTPException: If token is invalid or expired
     """
     from fastapi import HTTPException
-    
+
     try:
         payload = decode_token(token, expected_type="access")
         user_id: int = payload.get("user_id")

@@ -1,9 +1,12 @@
 """Database models for the Fashion Assistant app — no inference logic here."""
+
 APP_NAME = "Fashion Assistant"
+
 
 def models_use_ai() -> bool:
     """Quick programmatic hint: models module does not perform inference."""
     return False
+
 
 # Create User model class that:
 # - inherits from Base
@@ -26,7 +29,16 @@ def models_use_ai() -> bool:
 # - has columns: id (primary key), user_id (foreign key to users), created_at (datetime)
 # - has columns: name (string), occasion (string, nullable), items_json (text to store item IDs as JSON)
 # - has relationship to user (many-to-one)
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Text, DateTime, Boolean
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    ForeignKey,
+    Text,
+    DateTime,
+    Boolean,
+)
 from sqlalchemy.orm import relationship
 from .database import Base
 import re
@@ -45,24 +57,36 @@ class User(Base):
     email_verification_expires_at = Column(DateTime, nullable=True)
     email_verified_at = Column(DateTime, nullable=True)
     profile_image_path = Column(String(255), nullable=True)
-    
+
     # Analysis fields
     height = Column(Float, nullable=True)
     weight = Column(Float, nullable=True)
     body_shape = Column(String(50), nullable=True)
     undertone = Column(String(50), nullable=True)
     bmi = Column(Float, nullable=True)
-    
+
     # Timestamps
     created_at = Column(DateTime, default=utcnow)
-    
+
     # Relationships
-    wardrobe_items = relationship("WardrobeItem", back_populates="user", cascade="all, delete-orphan")
-    outfits = relationship("Outfit", back_populates="user", cascade="all, delete-orphan")
-    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
-    outfit_ratings = relationship("OutfitRating", cascade="all, delete-orphan", overlaps="user")
-    recommendation_feedback = relationship("RecommendationFeedback", cascade="all, delete-orphan", overlaps="user")
-    item_usage = relationship("ItemUsage", cascade="all, delete-orphan", overlaps="user")
+    wardrobe_items = relationship(
+        "WardrobeItem", back_populates="user", cascade="all, delete-orphan"
+    )
+    outfits = relationship(
+        "Outfit", back_populates="user", cascade="all, delete-orphan"
+    )
+    refresh_tokens = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )
+    outfit_ratings = relationship(
+        "OutfitRating", cascade="all, delete-orphan", overlaps="user"
+    )
+    recommendation_feedback = relationship(
+        "RecommendationFeedback", cascade="all, delete-orphan", overlaps="user"
+    )
+    item_usage = relationship(
+        "ItemUsage", cascade="all, delete-orphan", overlaps="user"
+    )
 
 
 class WardrobeItem(Base):
@@ -117,6 +141,7 @@ class RefreshToken(Base):
 
 class OutfitRating(Base):
     """User ratings of generated outfits for feedback-driven improvement."""
+
     __tablename__ = "outfit_ratings"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -132,12 +157,17 @@ class OutfitRating(Base):
 
 class RecommendationFeedback(Base):
     """Feedback on recommendations (outfit, shopping, discard) to track accuracy."""
+
     __tablename__ = "recommendation_feedback"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    recommendation_type = Column(String(50), nullable=False)  # "outfit" | "shopping" | "discard"
-    recommendation_id = Column(String(255), nullable=False)  # ID of the specific recommendation
+    recommendation_type = Column(
+        String(50), nullable=False
+    )  # "outfit" | "shopping" | "discard"
+    recommendation_id = Column(
+        String(255), nullable=False
+    )  # ID of the specific recommendation
     helpful = Column(Integer, nullable=False)  # 1 for yes, 0 for no
     created_at = Column(DateTime, default=utcnow, index=True)
 
@@ -146,11 +176,14 @@ class RecommendationFeedback(Base):
 
 class ItemUsage(Base):
     """Track wardrobe item usage (worn, kept, discarded) for improving recommendations."""
+
     __tablename__ = "item_usage"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    item_id = Column(Integer, ForeignKey("wardrobe_items.id"), nullable=False, index=True)
+    item_id = Column(
+        Integer, ForeignKey("wardrobe_items.id"), nullable=False, index=True
+    )
     action = Column(String(50), nullable=False)  # "kept" | "discarded" | "worn"
     wear_count = Column(Integer, default=1)
     created_at = Column(DateTime, default=utcnow, index=True)
@@ -161,15 +194,20 @@ class ItemUsage(Base):
 
 class ModelMetrics(Base):
     """Track model performance metrics over time for monitoring and retraining decisions."""
+
     __tablename__ = "model_metrics"
 
     id = Column(Integer, primary_key=True, index=True)
-    model_name = Column(String(100), nullable=False)  # "color_harmony" | "clothing_classifier" | "body_shape"
-    metric_type = Column(String(50), nullable=False)  # "accuracy" | "avg_rating" | "helpful_rate" | "drift_score"
+    model_name = Column(
+        String(100), nullable=False
+    )  # "color_harmony" | "clothing_classifier" | "body_shape"
+    metric_type = Column(
+        String(50), nullable=False
+    )  # "accuracy" | "avg_rating" | "helpful_rate" | "drift_score"
     value = Column(Float, nullable=False)
     evaluation_date = Column(DateTime, default=utcnow, index=True)
     version = Column(String(50), nullable=True)  # Model version/epoch for tracking
-    
+
     created_at = Column(DateTime, default=utcnow)
 
 
@@ -212,26 +250,54 @@ def _item_to_dict_minimal(item):
     # str or int (id only) — improved parsing for numeric strings
     try:
         if isinstance(item, int):
-            return {"id": item, "type": None, "category": None, "color": None, "pattern": None, "image_path": None}
+            return {
+                "id": item,
+                "type": None,
+                "category": None,
+                "color": None,
+                "pattern": None,
+                "image_path": None,
+            }
         if isinstance(item, str):
             s = item.strip()
             if s.isdigit():
                 _item_id = int(s)
-                return {"id": _item_id, "type": None, "category": None, "color": None, "pattern": None, "image_path": None}
+                return {
+                    "id": _item_id,
+                    "type": None,
+                    "category": None,
+                    "color": None,
+                    "pattern": None,
+                    "image_path": None,
+                }
             # try to extract first digit sequence from the string
             m = re.search(r"(\d+)", s)
             if m:
                 _item_id = int(m.group(1))
-                return {"id": _item_id, "type": None, "category": None, "color": None, "pattern": None, "image_path": None}
+                return {
+                    "id": _item_id,
+                    "type": None,
+                    "category": None,
+                    "color": None,
+                    "pattern": None,
+                    "image_path": None,
+                }
     except Exception:
         pass
 
     # Fallback
-    return {"id": None, "type": None, "category": None, "color": None, "pattern": None, "image_path": None}
+    return {
+        "id": None,
+        "type": None,
+        "category": None,
+        "color": None,
+        "pattern": None,
+        "image_path": None,
+    }
+
 
 def normalize_items_for_response(items):
     """Normalize a list of items (mixed types) into a list of minimal dicts.
     Use this in endpoints while you fix callers to provide real WardrobeItem objects.
-     """
+    """
     return [_item_to_dict_minimal(i) for i in (items or [])]
-

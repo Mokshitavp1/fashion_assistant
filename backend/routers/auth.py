@@ -54,15 +54,17 @@ def get_db() -> Session:
         db.close()
 
 
-def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> int:
+def verify_token(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> int:
     """Verify JWT token and return user_id.
-    
+
     Args:
         credentials: HTTP bearer credentials
-        
+
     Returns:
         User ID
-        
+
     Raises:
         HTTPException: If token invalid or missing
     """
@@ -70,24 +72,22 @@ def verify_token(credentials: Optional[HTTPAuthorizationCredentials] = Depends(s
         raise HTTPException(
             status_code=401,
             detail="Missing authorization token",
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return decode_access_user_id(credentials.credentials)
 
 
 @router.post("/register", response_model=RegisterResponse)
 async def register(
-    user_data: UserCreate,
-    request: Request,
-    db: Session = Depends(get_db)
+    user_data: UserCreate, request: Request, db: Session = Depends(get_db)
 ) -> RegisterResponse:
     """Register a new user.
-    
+
     Args:
         user_data: User registration data
         request: HTTP request
         db: Database session
-        
+
     Returns:
         Registration response with verification token if email verification required
     """
@@ -98,7 +98,7 @@ async def register(
             request,
             "failure",
             email=user_data.email,
-            detail="Email already registered"
+            detail="Email already registered",
         )
         raise crud.DuplicateEmailError("Email already registered")
 
@@ -123,21 +123,19 @@ async def register(
             logger.error(f"Failed to send verification email: {str(e)}")
             db.delete(new_user)
             db.commit()
-            raise HTTPException(status_code=500, detail="Failed to send verification email")
+            raise HTTPException(
+                status_code=500, detail="Failed to send verification email"
+            )
 
         audit_auth_event(
-            "register",
-            request,
-            "success",
-            user_id=new_user.id,
-            email=user_data.email
+            "register", request, "success", user_id=new_user.id, email=user_data.email
         )
 
         return RegisterResponse(
             detail="User registered successfully. Please verify your email.",
             email_verification_required=True,
             email=user_data.email,
-            verification_token=verification_token
+            verification_token=verification_token,
         )
     else:
         new_user = crud.create_user(
@@ -149,11 +147,7 @@ async def register(
         )
 
         audit_auth_event(
-            "register",
-            request,
-            "success",
-            user_id=new_user.id,
-            email=user_data.email
+            "register", request, "success", user_id=new_user.id, email=user_data.email
         )
 
         return RegisterResponse(
@@ -165,29 +159,27 @@ async def register(
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    user_login: UserLogin,
-    request: Request,
-    db: Session = Depends(get_db)
+    user_login: UserLogin, request: Request, db: Session = Depends(get_db)
 ) -> TokenResponse:
     """Login user and return tokens.
-    
+
     Args:
         user_login: Login credentials
         request: HTTP request
         db: Database session
-        
+
     Returns:
         Tokens and user info
     """
     user = crud.get_user_by_email(db, user_login.email)
-    
+
     if not user or not verify_password(user_login.password, user.password_hash):
         audit_auth_event(
             "login",
             request,
             "failure",
             email=user_login.email,
-            detail="Invalid credentials"
+            detail="Invalid credentials",
         )
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
@@ -198,39 +190,33 @@ async def login(
             "failure",
             user_id=user.id,
             email=user_login.email,
-            detail="Email not verified"
+            detail="Email not verified",
         )
         raise HTTPException(
             status_code=403,
-            detail="Email not verified. Please verify your email before logging in."
+            detail="Email not verified. Please verify your email before logging in.",
         )
 
     auth_response = build_auth_response(db, user.id, request)
-    
+
     audit_auth_event(
-        "login",
-        request,
-        "success",
-        user_id=user.id,
-        email=user_login.email
+        "login", request, "success", user_id=user.id, email=user_login.email
     )
-    
+
     return TokenResponse(**auth_response)
 
 
 @router.post("/verify-email", response_model=EmailVerificationResponse)
 async def verify_email(
-    data: EmailVerificationRequest,
-    request: Request,
-    db: Session = Depends(get_db)
+    data: EmailVerificationRequest, request: Request, db: Session = Depends(get_db)
 ) -> EmailVerificationResponse:
     """Verify user's email with verification token.
-    
+
     Args:
         data: Email verification data
         request: HTTP request
         db: Database session
-        
+
     Returns:
         Verification response
     """
@@ -239,53 +225,47 @@ async def verify_email(
 
     if not user:
         audit_auth_event(
-            "verify_email",
-            request,
-            "failure",
-            detail="Invalid verification token"
+            "verify_email", request, "failure", detail="Invalid verification token"
         )
         raise crud.ValidationError("Invalid verification token")
 
-    if user.email_verification_expires_at and user.email_verification_expires_at < utcnow():
+    if (
+        user.email_verification_expires_at
+        and user.email_verification_expires_at < utcnow()
+    ):
         audit_auth_event(
             "verify_email",
             request,
             "failure",
             user_id=user.id,
-            detail="Verification token expired"
+            detail="Verification token expired",
         )
         raise crud.ValidationError("Verification token expired")
 
     crud.mark_email_verified(db, user.id)
-    
+
     audit_auth_event(
-        "verify_email",
-        request,
-        "success",
-        user_id=user.id,
-        email=user.email
+        "verify_email", request, "success", user_id=user.id, email=user.email
     )
-    
+
     return EmailVerificationResponse(
         detail="Email verified successfully",
         email_verification_required=False,
-        email=user.email
+        email=user.email,
     )
 
 
 @router.post("/resend-verification", response_model=EmailVerificationResponse)
 async def resend_verification(
-    data: ResendVerificationRequest,
-    request: Request,
-    db: Session = Depends(get_db)
+    data: ResendVerificationRequest, request: Request, db: Session = Depends(get_db)
 ) -> EmailVerificationResponse:
     """Resend verification email.
-    
+
     Args:
         data: Email to resend verification to
         request: HTTP request
         db: Database session
-        
+
     Returns:
         Verification response
     """
@@ -298,17 +278,12 @@ async def resend_verification(
         return EmailVerificationResponse(
             detail="Email already verified",
             email_verification_required=False,
-            email=user.email
+            email=user.email,
         )
 
     verification_token, token_hash, expires_at = create_email_verification_token()
 
-    crud.update_email_verification_token(
-        db,
-        user.id,
-        token_hash,
-        expires_at
-    )
+    crud.update_email_verification_token(db, user.id, token_hash, expires_at)
 
     try:
         send_verification_code_email(user.email, verification_token)
@@ -317,34 +292,28 @@ async def resend_verification(
         raise HTTPException(status_code=500, detail="Failed to send verification email")
 
     audit_auth_event(
-        "resend_verification",
-        request,
-        "success",
-        user_id=user.id,
-        email=user.email
+        "resend_verification", request, "success", user_id=user.id, email=user.email
     )
 
     return EmailVerificationResponse(
         detail="Verification email sent",
         email_verification_required=True,
         email=user.email,
-        verification_token=verification_token
+        verification_token=verification_token,
     )
 
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_access_token(
-    data: RefreshTokenRequest,
-    request: Request,
-    db: Session = Depends(get_db)
+    data: RefreshTokenRequest, request: Request, db: Session = Depends(get_db)
 ) -> TokenResponse:
     """Refresh access token using refresh token.
-    
+
     Args:
         data: Refresh token request
         request: HTTP request
         db: Database session
-        
+
     Returns:
         New access token
     """
@@ -374,15 +343,15 @@ async def refresh_access_token(
 async def logout(
     request: Request,
     current_user_id: int = Depends(verify_token),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> dict:
     """Logout current session.
-    
+
     Args:
         request: HTTP request
         current_user_id: Current user ID
         db: Database session
-        
+
     Returns:
         Logout confirmation
     """
@@ -397,12 +366,7 @@ async def logout(
         except Exception:
             pass
 
-    audit_auth_event(
-        "logout",
-        request,
-        "success",
-        user_id=current_user_id
-    )
+    audit_auth_event("logout", request, "success", user_id=current_user_id)
 
     return {"message": "Logged out successfully"}
 
@@ -411,45 +375,45 @@ async def logout(
 async def logout_all_sessions(
     request: Request,
     current_user_id: int = Depends(verify_token),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> LogoutAllResponse:
     """Logout all sessions for current user.
-    
+
     Args:
         request: HTTP request
         current_user_id: Current user ID
         db: Database session
-        
+
     Returns:
         Number of sessions revoked
     """
-    revoked_count = crud.revoke_all_user_sessions(db, current_user_id, reason="user_logout_all")
+    revoked_count = crud.revoke_all_user_sessions(
+        db, current_user_id, reason="user_logout_all"
+    )
 
     audit_auth_event(
         "logout_all",
         request,
         "success",
         user_id=current_user_id,
-        detail=f"Revoked {revoked_count} sessions"
+        detail=f"Revoked {revoked_count} sessions",
     )
 
     return LogoutAllResponse(
-        detail=f"All sessions revoked",
-        revoked_sessions=revoked_count
+        detail=f"All sessions revoked", revoked_sessions=revoked_count
     )
 
 
 @router.get("/sessions", response_model=AuthSessionsResponse)
 async def get_sessions(
-    current_user_id: int = Depends(verify_token),
-    db: Session = Depends(get_db)
+    current_user_id: int = Depends(verify_token), db: Session = Depends(get_db)
 ) -> AuthSessionsResponse:
     """Get all active sessions for current user.
-    
+
     Args:
         current_user_id: Current user ID
         db: Database session
-        
+
     Returns:
         List of active sessions
     """
@@ -474,9 +438,7 @@ async def get_sessions(
     ]
 
     return AuthSessionsResponse(
-        total_sessions=total,
-        active_sessions=active,
-        sessions=session_infos
+        total_sessions=total, active_sessions=active, sessions=session_infos
     )
 
 
@@ -484,15 +446,15 @@ async def get_sessions(
 async def revoke_session(
     jti: str,
     current_user_id: int = Depends(verify_token),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> dict:
     """Revoke a specific session.
-    
+
     Args:
         jti: Session JWT ID
         current_user_id: Current user ID
         db: Database session
-        
+
     Returns:
         Revocation confirmation
     """
@@ -508,17 +470,15 @@ async def revoke_session(
 
 @router.post("/password-reset/request", response_model=PasswordResetRequestResponse)
 async def request_password_reset(
-    data: PasswordResetRequest,
-    request: Request,
-    db: Session = Depends(get_db)
+    data: PasswordResetRequest, request: Request, db: Session = Depends(get_db)
 ) -> PasswordResetRequestResponse:
     """Request password reset token.
-    
+
     Args:
         data: Email for password reset
         request: HTTP request
         db: Database session
-        
+
     Returns:
         Password reset request response
     """
@@ -535,34 +495,28 @@ async def request_password_reset(
         _send_password_reset_email(user.email, reset_token)
     except Exception as e:
         logger.error(f"Failed to send password reset email: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to send password reset email")
+        raise HTTPException(
+            status_code=500, detail="Failed to send password reset email"
+        )
 
     audit_auth_event(
-        "password_reset_request",
-        request,
-        "success",
-        user_id=user.id,
-        email=user.email
+        "password_reset_request", request, "success", user_id=user.id, email=user.email
     )
 
-    return PasswordResetRequestResponse(
-        detail="Password reset link sent to email"
-    )
+    return PasswordResetRequestResponse(detail="Password reset link sent to email")
 
 
 @router.post("/password-reset/confirm")
 async def confirm_password_reset(
-    data: PasswordResetConfirm,
-    request: Request,
-    db: Session = Depends(get_db)
+    data: PasswordResetConfirm, request: Request, db: Session = Depends(get_db)
 ) -> dict:
     """Confirm password reset with token.
-    
+
     Args:
         data: Password reset confirmation data
         request: HTTP request
         db: Database session
-        
+
     Returns:
         Confirmation response
     """
@@ -585,7 +539,7 @@ async def confirm_password_reset(
             request,
             "success",
             user_id=user_id,
-            email=user.email
+            email=user.email,
         )
 
         return {"message": "Password reset successfully"}
@@ -600,7 +554,7 @@ async def confirm_password_reset(
 
 def _send_password_reset_email(email: str, reset_token: str) -> None:
     """Send password reset email.
-    
+
     Args:
         email: Recipient email
         reset_token: Reset token to send
@@ -625,21 +579,21 @@ def _send_password_reset_email(email: str, reset_token: str) -> None:
                 reset_token,
             )
             return
-        raise RuntimeError("SMTP credentials are required to send password reset emails")
+        raise RuntimeError(
+            "SMTP credentials are required to send password reset emails"
+        )
 
     message = EmailMessage()
     message["Subject"] = "Fashion App Password Reset"
     message["From"] = SMTP_FROM_ADDRESS or SMTP_USERNAME
     message["To"] = email
-    message.set_content(
-        f"""Your password reset link is below.
+    message.set_content(f"""Your password reset link is below.
 
 Reset Token: {reset_token}
 
 This token expires in 30 minutes.
 If you did not request this, you can ignore this email.
-"""
-    )
+""")
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
         if SMTP_USE_TLS:

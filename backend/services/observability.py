@@ -21,7 +21,17 @@ class JSONFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        for key in ("event", "request_id", "method", "path", "status_code", "duration_ms", "client_ip", "error_type", "error_detail"):
+        for key in (
+            "event",
+            "request_id",
+            "method",
+            "path",
+            "status_code",
+            "duration_ms",
+            "client_ip",
+            "error_type",
+            "error_detail",
+        ):
             value = getattr(record, key, None)
             if value is not None:
                 payload[key] = value
@@ -72,9 +82,13 @@ def log_event(
     )
 
 
-def request_log_payload(request: Request, request_id: str, status_code: int, duration_ms: float) -> Dict[str, Any]:
+def request_log_payload(
+    request: Request, request_id: str, status_code: int, duration_ms: float
+) -> Dict[str, Any]:
     """Build a reusable request log payload."""
-    client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else None)
+    client_ip = request.headers.get(
+        "x-forwarded-for", request.client.host if request.client else None
+    )
     return {
         "request_id": request_id,
         "method": request.method,

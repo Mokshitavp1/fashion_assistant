@@ -6,4 +6,4 @@ TESTS_PATH=${1:-backend/tests}
 export EMAIL_VERIFICATION_REQUIRED=true
 echo "EMAIL_VERIFICATION_REQUIRED=$EMAIL_VERIFICATION_REQUIRED"
 
-pytest "$TESTS_PATH" -q
+python -m pytest "$TESTS_PATH" -q
