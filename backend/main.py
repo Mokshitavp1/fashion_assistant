@@ -2080,12 +2080,36 @@ async def delete_wardrobe_item_endpoint(
 
     try:
         if image_path:
-            if os.path.isabs(image_path):
-                p = image_path
+            if image_path.startswith("encrypted://"):
+                # Extract the image ID and delete via the secure storage service,
+                # which overwrites the file with random bytes before unlinking both
+                # the .bin (encrypted data) and .meta (ownership metadata) files.
+                enc_image_id = image_path.replace("encrypted://", "", 1)
+                try:
+                    delete_encrypted_image(
+                        image_id=enc_image_id,
+                        user_id=user_id,
+                        verify_ownership=True,
+                    )
+                except FileNotFoundError:
+                    logger.warning(
+                        "Encrypted image %s not found on disk during wardrobe item delete",
+                        enc_image_id,
+                    )
+                except PermissionError:
+                    logger.warning(
+                        "Ownership mismatch when deleting encrypted image %s for user %s",
+                        enc_image_id,
+                        user_id,
+                    )
             else:
-                p = os.path.join(UPLOAD_DIR, os.path.basename(image_path))
-            if os.path.exists(p):
-                os.remove(p)
+                # Legacy plain-path images (pre-encryption era)
+                if os.path.isabs(image_path):
+                    p = image_path
+                else:
+                    p = os.path.join(UPLOAD_DIR, os.path.basename(image_path))
+                if os.path.exists(p):
+                    os.remove(p)
     except Exception:
         pass
 
