@@ -940,6 +940,22 @@ async def login(
         )
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # Verify password BEFORE checking email_verified.
+    # If we checked email_verified first, an attacker could probe any email with
+    # a wrong password: a 403 would reveal the account exists-but-unverified,
+    # while a 401 would mean no account — a clear enumeration leak.
+    # Checking the password first ensures both wrong-password paths return 401.
+    if not verify_password(password, user.password_hash):
+        audit_auth_event(
+            "login",
+            request,
+            "failure",
+            user_id=user.id,
+            email=user.email,
+            detail="invalid_credentials",
+        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
     if not user.email_verified:
         audit_auth_event(
             "login",
@@ -952,17 +968,6 @@ async def login(
         raise HTTPException(
             status_code=403, detail="Please confirm your email before signing in"
         )
-
-    if not verify_password(password, user.password_hash):
-        audit_auth_event(
-            "login",
-            request,
-            "failure",
-            user_id=user.id,
-            email=user.email,
-            detail="invalid_credentials",
-        )
-        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     audit_auth_event("login", request, "success", user_id=user.id, email=user.email)
     return build_auth_response(db, user.id, request=request)
