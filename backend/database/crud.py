@@ -70,8 +70,10 @@ class PaginationParams:
     """Pagination parameters"""
 
     def __init__(self, limit: int = 20, offset: int = 0):
-        if limit < 1 or limit > 100:
+        if limit < 1:
             limit = 20
+        elif limit > 1000:
+            limit = 1000
         if offset < 0:
             offset = 0
         self.limit = limit
