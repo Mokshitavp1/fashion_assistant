@@ -184,22 +184,20 @@ export const analyzeShoppingItem = async (userId, image) => {
 
 // Feedback & Learning APIs
 export const rateOutfit = async (userId, outfitId, rating, comment = null) => {
-  return api.post(`/users/${userId}/outfits/${outfitId}/rate`, {
-    rating,
-    comment
+  return api.post(`/users/${userId}/outfits/${outfitId}/rate`, null, {
+    params: { rating, comment }
   });
 };
 
 export const feedbackRecommendation = async (userId, recType, recId, helpful) => {
-  return api.post(`/users/${userId}/recommendations/${recType}/${recId}/feedback`, {
-    helpful
+  return api.post(`/users/${userId}/recommendations/${recType}/${recId}/feedback`, null, {
+    params: { helpful }
   });
 };
 
 export const trackItemUsage = async (userId, itemId, action, wearCount = 1) => {
-  return api.post(`/users/${userId}/wardrobe/${itemId}/usage`, {
-    action,
-    wear_count: wearCount
+  return api.post(`/users/${userId}/wardrobe/${itemId}/usage`, null, {
+    params: { action, wear_count: wearCount }
   });
 };
 
