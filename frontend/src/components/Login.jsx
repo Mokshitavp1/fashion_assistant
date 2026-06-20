@@ -415,7 +415,7 @@ function Login() {
   const handleRequestReset = async () => {
     setResetLoading(true); setError(''); setResetMessage('');
     try {
-      const response = await requestPasswordReset(resetEmail || email);
+      const response = await requestPasswordReset(resetEmail);
       setResetMessage(response.data?.detail || 'If that email is registered, reset instructions were sent.');
       if (response.data?.reset_token) setResetToken(response.data.reset_token);
     } catch (err) {
@@ -499,7 +499,7 @@ function Login() {
                   <label>Email for reset</label>
                   <input type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="your@email.com" />
                 </div>
-                <button className="btn-outline" onClick={handleRequestReset} disabled={(!resetEmail && !email) || resetLoading}>
+                <button className="btn-outline" onClick={handleRequestReset} disabled={!resetEmail || resetLoading}>
                   {resetLoading ? 'Requesting…' : 'Send Reset Link'}
                 </button>
                 <div className="lf mt-10">
