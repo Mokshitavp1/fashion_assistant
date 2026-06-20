@@ -60,7 +60,6 @@ const css = `
     cursor: pointer;
     transition: all 0.2s;
     font-family: 'DM Sans', sans-serif;
-    border: none;
   }
   .login-back:hover { color: var(--carnation); background: var(--pink); }
 
