@@ -5,9 +5,16 @@ import cv2
 import numpy as np
 from fastapi import HTTPException
 from typing import Optional, Dict, Tuple
+from pathlib import Path
 
-# Load model once at module level for efficiency
-model = YOLO("yolov8n-pose.pt")
+_MODEL_PATH = Path(__file__).parent.parent / "yolov8n-pose.pt"
+_model = None
+
+def _get_model():
+    global _model
+    if _model is None:
+        _model = YOLO(str(_MODEL_PATH))
+    return _model
 
 
 def _select_best_person(results, image_bgr) -> Tuple[np.ndarray, Dict]:
@@ -138,6 +145,7 @@ def detect_body_keypoints(image_bgr):
     Raises:
         HTTPException: If no valid person is detected
     """
+    model = _get_model()
     results = model(image_bgr, verbose=False)
 
     # Select best person based on quality metrics
