@@ -459,11 +459,23 @@ function Login() {
 
             <div className="lf">
               <label>Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
+              />
             </div>
             <div className="lf">
               <label>Password</label>
-              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
+              />
             </div>
 
             <button className="forgot-link" onClick={() => { setShowReset(v => !v); setError(''); setResetMessage(''); }}>
