@@ -2325,18 +2325,30 @@ async def get_user_feedback_summary(
 # ============ ADMIN METRICS ENDPOINTS ============
 
 
+def verify_admin(
+    db: Session = Depends(get_db), current_user_id: int = Depends(verify_token)
+) -> int:
+    user = crud.get_user_by_id(db, current_user_id)
+    if not user:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    role = getattr(user, "role", None)
+    role_val = role if isinstance(role, str) else getattr(role, "value", None)
+    if role_val != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user_id
+
+
 @app.get("/admin/metrics/models")
 async def get_model_metrics_endpoint(
     model_name: Optional[str] = None,
     limit: int = 20,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(verify_token),
+    current_user_id: int = Depends(verify_admin),
 ):
     """
     Get model performance metrics over time.
     Admin endpoint - restricted to monitoring systems.
     """
-    # Note: In production, add admin role check
     try:
         if model_name:
             metrics = crud.get_model_metrics(db, model_name, limit=limit)
@@ -2377,10 +2389,9 @@ async def get_model_metrics_endpoint(
 async def get_feedback_volume(
     days: int = 30,
     db: Session = Depends(get_db),
-    current_user_id: int = Depends(verify_token),
+    current_user_id: int = Depends(verify_admin),
 ):
     """Get feedback volume collected in the last N days"""
-    # Note: In production, add admin role check
     try:
         feedback_data = crud.get_feedback_for_period(db, days=days)
         return {
