@@ -312,7 +312,11 @@ def generate_outfits(
     for outfit_items in outfit_combinations:
         # Filter by season if specified
         if season:
-            if not all(item.season in [season, "all", None] for item in outfit_items):
+            season_lower = season.lower()
+            if not all(
+                (item.season.lower() if isinstance(item.season, str) else None) in [season_lower, "all", None]
+                for item in outfit_items
+            ):
                 continue
 
         # Convert items to dict format for scoring
