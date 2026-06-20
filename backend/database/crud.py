@@ -1100,26 +1100,20 @@ def get_feedback_for_period(
     try:
         cutoff_date = utcnow() - timedelta(days=days)
 
-        ratings = (
-            db.query(models.OutfitRating)
-            .filter(models.OutfitRating.created_at >= cutoff_date)
-            .limit(limit)
-            .all()
-        )
+        ratings_q = db.query(models.OutfitRating).filter(models.OutfitRating.created_at >= cutoff_date)
+        if limit is not None:
+            ratings_q = ratings_q.limit(limit)
+        ratings = ratings_q.all()
 
-        rec_feedback = (
-            db.query(models.RecommendationFeedback)
-            .filter(models.RecommendationFeedback.created_at >= cutoff_date)
-            .limit(limit)
-            .all()
-        )
+        rec_feedback_q = db.query(models.RecommendationFeedback).filter(models.RecommendationFeedback.created_at >= cutoff_date)
+        if limit is not None:
+            rec_feedback_q = rec_feedback_q.limit(limit)
+        rec_feedback = rec_feedback_q.all()
 
-        usage = (
-            db.query(models.ItemUsage)
-            .filter(models.ItemUsage.created_at >= cutoff_date)
-            .limit(limit)
-            .all()
-        )
+        usage_q = db.query(models.ItemUsage).filter(models.ItemUsage.created_at >= cutoff_date)
+        if limit is not None:
+            usage_q = usage_q.limit(limit)
+        usage = usage_q.all()
 
         return {
             "outfit_ratings": ratings,
