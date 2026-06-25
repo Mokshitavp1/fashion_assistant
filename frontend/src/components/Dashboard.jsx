@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUser, logoutUser } from '../services/api';
-import { User, Shirt, Sparkles, ShoppingBag, LogOut, Shield } from 'lucide-react';
+import { getUser, logoutUser, hasActiveAuth, clearAuthStorage } from '../services/api';
+import { User, Shirt, Sparkles, ShoppingBag, LogOut, Shield, Trash2 } from 'lucide-react';
 import Notification from './Notification';
 import { sharedCSS } from './sharedStyles';
 
@@ -13,22 +13,35 @@ function Dashboard() {
   const userId = localStorage.getItem('userId');
 
   const fetchUser = useCallback(async () => {
+    if (!hasActiveAuth()) {
+      navigate('/login');
+      return;
+    }
     try {
       const response = await getUser(userId);
       setUser(response.data);
       setError('');
     } catch (error) {
       console.error('Error fetching user:', error);
+      const status = error.response?.status;
+      if (status === 401 || status === 403) {
+        clearAuthStorage();
+        navigate('/login');
+        return;
+      }
       setError(error.response?.data?.detail || 'Unable to load your profile.');
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, navigate]);
 
   useEffect(() => {
-    if (!userId) { navigate('/onboarding'); return; }
+    if (!hasActiveAuth()) {
+      navigate('/login');
+      return;
+    }
     fetchUser();
-  }, [fetchUser, userId, navigate]);
+  }, [fetchUser, navigate]);
 
   const handleLogout = async () => {
     await logoutUser();
@@ -39,25 +52,25 @@ function Dashboard() {
     return (
       <>
         <style>{sharedCSS}</style>
-        {error ? (
-          <div className="pg" style={{ textAlign: 'center', paddingTop: 60 }}>
-            <div className="loader-wrap">
-              <div style={{ marginBottom: 12 }}>
+        <div className="pg">
+          <div className="pg-body" style={{ paddingTop: 80 }}>
+            {error ? (
+              <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: '1.1rem', fontFamily: 'Playfair Display,serif' }}>Oops — trouble loading profile</p>
                 <p style={{ color: 'var(--mid)', marginBottom: 14 }}>{error}</p>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                   <button className="btn-p" onClick={() => { setLoading(true); fetchUser(); }}>Retry</button>
-                  <button className="btn-s" onClick={() => navigate('/onboarding')}>Go to Onboarding</button>
+                  <button className="btn-s" onClick={() => navigate('/login')}>Sign In</button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="loader-wrap" style={{ minHeight: '50vh', background: 'transparent' }}>
+                <div className="loader-ring" />
+                <p className="loader-text">Dressing up your dashboard…</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="loader-wrap">
-            <div className="loader-ring" />
-            <p className="loader-text">Dressing up your dashboard…</p>
-          </div>
-        )}
+        </div>
         {error && (
           <Notification
             id="dashboard-error"
@@ -83,6 +96,7 @@ function Dashboard() {
     { icon: <Shirt size={22} />, title: 'My Wardrobe', desc: 'View and manage your clothing items', path: '/wardrobe' },
     { icon: <Sparkles size={22} />, title: 'Outfit Ideas', desc: 'ML-powered outfit recommendations just for you', path: '/outfits' },
     { icon: <ShoppingBag size={22} />, title: 'Shopping Assistant', desc: 'Check if a new item matches your wardrobe', path: '/shopping' },
+    { icon: <Trash2 size={22} />, title: 'Discard Suggestions', desc: 'See which wardrobe items you may want to let go', path: '/discard' },
     { icon: <Shield size={22} />, title: 'Security Sessions', desc: 'Review and revoke active login sessions', path: '/sessions' },
   ];
 

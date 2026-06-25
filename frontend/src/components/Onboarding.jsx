@@ -529,6 +529,21 @@ function Onboarding() {
     if (file) { setImage(file); setImagePreview(URL.createObjectURL(file)); }
   };
 
+  const completeSignup = async (loginResponse) => {
+    const userId = loginResponse.data.user_id;
+    try {
+      await analyzeUser(userId, image, parseFloat(height), parseFloat(weight));
+    } catch (analyzeErr) {
+      const analyzeDetail = analyzeErr.response?.data?.detail;
+      setVerificationMessage(
+        analyzeDetail
+          ? `Account ready. Body analysis note: ${analyzeDetail}`
+          : 'Account ready. Body analysis could not finish — you can retry later from your profile.',
+      );
+    }
+    navigate('/dashboard');
+  };
+
   const handleSubmit = async () => {
     setLoading(true); setError('');
     try {
@@ -547,8 +562,7 @@ function Onboarding() {
         setVerificationToken('');
         setVerificationMessage(userResponse.data?.detail || 'Account created. Signing you in now...');
         const loginResponse = await loginUser(email, password);
-        await analyzeUser(loginResponse.data.user_id, image, parseFloat(height), parseFloat(weight));
-        navigate('/dashboard');
+        await completeSignup(loginResponse);
         return;
       }
 
@@ -556,7 +570,7 @@ function Onboarding() {
       setVerificationToken(userResponse.data?.verification_token || '');
       setVerificationMessage(userResponse.data?.detail || 'Check your Gmail for the confirmation code.');
     } catch (err) {
-      setError(err.response?.data?.detail || 'An error occurred. Please try again.');
+      setError(err.response?.data?.detail || err.message || 'An error occurred. Please try again.');
     } finally { setLoading(false); }
   };
 
@@ -566,8 +580,7 @@ function Onboarding() {
       const response = await confirmEmailVerification(verificationToken);
       setVerificationMessage(response.data?.detail || 'Email confirmed.');
       const loginResponse = await loginUser(email, password);
-      await analyzeUser(loginResponse.data.user_id, image, parseFloat(height), parseFloat(weight));
-      navigate('/dashboard');
+      await completeSignup(loginResponse);
     } catch (err) {
       setError(err.response?.data?.detail || 'Unable to confirm your email.');
     } finally { setLoading(false); }

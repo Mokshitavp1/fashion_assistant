@@ -4,20 +4,22 @@ import Login from './components/Login';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import Wardrobe from './components/Wardrobe';
-import Outfits from './components/Outfits';
-import Shopping from './components/Shopping';
+import Outfits from './components/outfits';
+import Shopping from './components/shopping';
 import Discard from './components/discard';
 import Sessions from './components/Sessions';
-
-function hasActiveAuth() {
-  const accessToken = localStorage.getItem('accessToken');
-  const userId = localStorage.getItem('userId');
-  return Boolean(accessToken && userId);
-}
+import { hasActiveAuth } from './services/api';
 
 function PublicOnlyRoute({ children }) {
   if (hasActiveAuth()) {
     return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+}
+
+function RequireAuth({ children }) {
+  if (!hasActiveAuth()) {
+    return <Navigate to="/login" replace />;
   }
   return children;
 }
@@ -29,12 +31,12 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
         <Route path="/onboarding" element={<PublicOnlyRoute><Onboarding /></PublicOnlyRoute>} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/wardrobe" element={<Wardrobe />} />
-        <Route path="/outfits" element={<Outfits />} />
-        <Route path="/shopping" element={<Shopping />} />
-        <Route path="/discard" element={<Discard />} />
-        <Route path="/sessions" element={<Sessions />} />
+        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/wardrobe" element={<RequireAuth><Wardrobe /></RequireAuth>} />
+        <Route path="/outfits" element={<RequireAuth><Outfits /></RequireAuth>} />
+        <Route path="/shopping" element={<RequireAuth><Shopping /></RequireAuth>} />
+        <Route path="/discard" element={<RequireAuth><Discard /></RequireAuth>} />
+        <Route path="/sessions" element={<RequireAuth><Sessions /></RequireAuth>} />
       </Routes>
     </Router>
   );

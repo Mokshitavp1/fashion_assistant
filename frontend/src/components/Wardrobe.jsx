@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getWardrobe, addWardrobeItem, deleteWardrobeItem } from '../services/api';
+import { getWardrobe, addWardrobeItem, deleteWardrobeItem, API_BASE_URL } from '../services/api';
 import { ArrowLeft, Plus, Trash2, Upload, AlertTriangle } from 'lucide-react';
 import Notification from './Notification';
 import { sharedCSS } from './sharedStyles';
 
-const IMAGE_BASE_URL = 'http://127.0.0.1:8000';
+const IMAGE_BASE_URL = API_BASE_URL;
 
 function Wardrobe() {
   const navigate = useNavigate();

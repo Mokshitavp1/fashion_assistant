@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDiscardRecommendations } from '../services/api';
+import { getDiscardRecommendations, API_BASE_URL } from '../services/api';
 import { ArrowLeft, Trash2, Heart, Lightbulb, AlertTriangle, CheckCircle } from 'lucide-react';
 import { sharedCSS } from './sharedStyles';
 import Notification from './Notification';
 
-const IMAGE_BASE_URL = 'http://127.0.0.1:8000';
+const IMAGE_BASE_URL = API_BASE_URL;
 
 function resolveItemImageUrl(item) {
   const token = localStorage.getItem('accessToken');

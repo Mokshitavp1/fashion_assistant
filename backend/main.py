@@ -193,10 +193,55 @@ async def run_bounded_image_job(job_name: str, func, *args, **kwargs):
 
 
 def _analyze_skin_tone(image_array: np.ndarray) -> Tuple[Tuple[int, int, int], str]:
-    face_region = detect_face_region(image_array)
+    try:
+        face_region = detect_face_region(image_array)
+    except HTTPException:
+        height, width = image_array.shape[:2]
+        top = max(height // 4, 0)
+        left = max(width // 4, 0)
+        face_region = image_array[top:top + max(height // 2, 1), left:left + max(width // 2, 1)]
+        if face_region.size == 0:
+            return (180, 150, 130), "neutral"
     dominant_color = extract_dominant_skin_color(face_region)
     undertone = classify_undertone(dominant_color)
     return dominant_color, undertone
+
+
+def _estimate_body_shape_from_bmi(height_cm: float, weight_kg: float) -> Dict[str, Any]:
+    """Fallback body-shape estimate when pose detection is unavailable."""
+    bmi = weight_kg / ((height_cm / 100) ** 2)
+    if bmi >= 30:
+        shape = "apple"
+    elif bmi >= 27:
+        shape = "rectangle"
+    elif bmi < 18.5:
+        shape = "rectangle"
+    else:
+        shape = "hourglass"
+    return {
+        "body_shape": shape,
+        "confidence": 0.35,
+        "measurements": {},
+        "bmi": round(bmi, 2),
+        "pose_quality": {},
+        "shape_validity": "bmi_fallback",
+    }
+
+
+async def _run_body_shape_analysis(
+    image_array: np.ndarray, height_cm: float, weight_kg: float
+) -> Dict[str, Any]:
+    """Run pose-based body-shape analysis with a BMI fallback."""
+    try:
+        return await run_bounded_image_job(
+            "body_shape_analysis",
+            classify_body_shape_with_bmi,
+            image_array,
+            height_cm,
+            weight_kg,
+        )
+    except HTTPException:
+        return _estimate_body_shape_from_bmi(height_cm, weight_kg)
 
 
 def to_json_compatible(value):
@@ -1542,9 +1587,7 @@ async def analyze_user(
         image_array,
     )
 
-    body_analysis = await run_bounded_image_job(
-        "body_shape_analysis",
-        classify_body_shape_with_bmi,
+    body_analysis = await _run_body_shape_analysis(
         image_array,
         user_data.height,
         user_data.weight,
@@ -1571,7 +1614,7 @@ async def analyze_user(
         "undertone": undertone,
         "body_shape": body_analysis["body_shape"],
         "body_shape_confidence": to_json_compatible(body_analysis["confidence"]),
-        "measurements": to_json_compatible(body_analysis["measurements"]),
+        "measurements": to_json_compatible(body_analysis.get("measurements", {})),
         "bmi": to_json_compatible(body_analysis["bmi"]),
         "height": user_data.height,
         "weight": user_data.weight,

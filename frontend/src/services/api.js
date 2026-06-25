@@ -1,16 +1,22 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 // Create axios instance without default Content-Type
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-const clearAuthStorage = () => {
+export const clearAuthStorage = () => {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('userId');
+};
+
+export const hasActiveAuth = () => {
+  const accessToken = localStorage.getItem('accessToken');
+  const userId = localStorage.getItem('userId');
+  return Boolean(accessToken && userId);
 };
 
 const persistAuthTokens = (payload) => {
