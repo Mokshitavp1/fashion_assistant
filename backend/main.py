@@ -116,7 +116,8 @@ UPLOAD_DIR = "uploaded_images"
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_FILE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173",
 ).split(",")
 EMAIL_VERIFICATION_REQUIRED = os.getenv(
     "EMAIL_VERIFICATION_REQUIRED", "true"
