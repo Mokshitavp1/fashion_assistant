@@ -10,6 +10,7 @@ from pathlib import Path
 _MODEL_PATH = Path(__file__).parent.parent / "yolov8n-pose.pt"
 _model = None
 
+
 def _get_model():
     global _model
     if _model is None:

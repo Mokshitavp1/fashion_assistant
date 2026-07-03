@@ -314,7 +314,8 @@ def generate_outfits(
         if season:
             season_lower = season.lower()
             if not all(
-                (item.season.lower() if isinstance(item.season, str) else None) in [season_lower, "all", None]
+                (item.season.lower() if isinstance(item.season, str) else None)
+                in [season_lower, "all", None]
                 for item in outfit_items
             ):
                 continue

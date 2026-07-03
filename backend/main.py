@@ -200,7 +200,9 @@ def _analyze_skin_tone(image_array: np.ndarray) -> Tuple[Tuple[int, int, int], s
         height, width = image_array.shape[:2]
         top = max(height // 4, 0)
         left = max(width // 4, 0)
-        face_region = image_array[top:top + max(height // 2, 1), left:left + max(width // 2, 1)]
+        face_region = image_array[
+            top : top + max(height // 2, 1), left : left + max(width // 2, 1)
+        ]
         if face_region.size == 0:
             return (180, 150, 130), "neutral"
     dominant_color = extract_dominant_skin_color(face_region)
@@ -1833,7 +1835,9 @@ async def get_wardrobe(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    items = crud.get_user_wardrobe(db, user_id, pagination=crud.PaginationParams(limit=100))
+    items = crud.get_user_wardrobe(
+        db, user_id, pagination=crud.PaginationParams(limit=100)
+    )
 
     normalized_items = []
     seen_ids = set()
@@ -1946,7 +1950,9 @@ async def recommend_outfits(
             detail="User profile not analyzed. Please analyze user first with /users/{user_id}/analyze",
         )
 
-    wardrobe_items = crud.get_user_wardrobe(db, user_id, pagination=crud.PaginationParams(limit=100))
+    wardrobe_items = crud.get_user_wardrobe(
+        db, user_id, pagination=crud.PaginationParams(limit=100)
+    )
 
     if len(wardrobe_items) < 2:
         raise HTTPException(
@@ -2003,7 +2009,9 @@ async def get_discard_suggestions(
             detail="User profile not analyzed. Please analyze user first.",
         )
 
-    wardrobe_items = crud.get_user_wardrobe(db, user_id, pagination=crud.PaginationParams(limit=100))
+    wardrobe_items = crud.get_user_wardrobe(
+        db, user_id, pagination=crud.PaginationParams(limit=100)
+    )
 
     if not wardrobe_items:
         raise HTTPException(status_code=400, detail="No items in wardrobe.")
@@ -2052,7 +2060,9 @@ async def analyze_shopping_item_endpoint(
             detail="User profile not analyzed. Please analyze user first.",
         )
 
-    wardrobe_items = crud.get_user_wardrobe(db, user_id, pagination=crud.PaginationParams(limit=100))
+    wardrobe_items = crud.get_user_wardrobe(
+        db, user_id, pagination=crud.PaginationParams(limit=100)
+    )
 
     np_array = np.frombuffer(image_bytes, np.uint8)
     image_array = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
