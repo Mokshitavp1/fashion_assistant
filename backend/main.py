@@ -155,8 +155,10 @@ SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").strip().lower() in {
 }
 MAX_CONCURRENT_IMAGE_JOBS = int(os.getenv("MAX_CONCURRENT_IMAGE_JOBS", "4"))
 IMAGE_JOB_SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_IMAGE_JOBS)
+# How long a job may wait to acquire a semaphore slot before returning 503.
+# 0.2s is appropriate for real-time fail-fast UX; raise in batch/background contexts.
 IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS = float(
-    os.getenv("IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS", "0.2")
+    os.getenv("IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS", "10.0")
 )
 INFERENCE_QUEUE_ENABLED = os.getenv(
     "INFERENCE_QUEUE_ENABLED",

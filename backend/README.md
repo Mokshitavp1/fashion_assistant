@@ -190,9 +190,45 @@ Behavior when queue is enabled:
 
 Scale by adding worker replicas (CPU/GPU nodes) independently from API replicas.
 
-## Production Scalability Notes
+## Load Testing Results
 
-- Heavy image tasks (skin tone, body-shape inference, clothing classification) run in a bounded worker pool instead of blocking the event loop.
+Benchmarked with an isolated in-process script ([`benchmark_latency.py`](benchmark_latency.py)) using
+`httpx.ASGITransport` against the live FastAPI app and real HuggingFace model pipeline.
+Workload mix: 30% `GET /profile`, 30% `GET /wardrobe`, 20% `POST /analyze`, 20% `POST /wardrobe/add`.
+
+> **Measurement caveat:** In-process timing only — does not include TCP handshake, TLS, or
+> Uvicorn overhead. Real-world per-request latencies will be ~5–20 ms higher.
+
+### Before fix — `IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS = 0.2s` (default)
+
+| Concurrency | RPS   | Success Rate | p50    | p95    | p99    | Errors       |
+|-------------|-------|--------------|--------|--------|--------|--------------|
+| 1           | 0.55  | 100%         | 4.7 ms | 6725 ms| 7870 ms| None         |
+| 2           | 14.27 | 100%         | 4.2 ms | 353 ms | 408 ms | None         |
+| 4           | 15.30 | **100%**     | 29 ms  | 550 ms | 600 ms | None         |
+| 8           | 23.02 | **87.5%**    | 17 ms  | 909 ms | 1124 ms| **5× HTTP 503** |
+
+Breaking point at 8 concurrent users: the 4-slot `IMAGE_JOB_SEMAPHORE` filled instantly and any
+job that couldn't acquire a slot within 200 ms was immediately rejected with `503 Service
+Unavailable` — before doing any work.
+
+### After fix — `IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS = 10.0s`
+
+| Concurrency | RPS   | Success Rate | p50    | p95     | p99     | Errors |
+|-------------|-------|--------------|--------|---------|---------|--------|
+| 1           | 2.64  | 100%         | 4.8 ms | 1303 ms | 1495 ms | None   |
+| 2           | 1.04  | 100%         | 142 ms | 4803 ms | 7748 ms | None   |
+| 4           | 19.31 | **100%**     | 16 ms  | 642 ms  | 734 ms  | None   |
+| 8           | 10.95 | **100%**     | 35 ms  | 1867 ms | 2100 ms | None   |
+
+Root cause and fix: changed `IMAGE_JOB_ACQUIRE_TIMEOUT_SECONDS` from `0.2` → `10.0` seconds.
+Jobs now queue and wait for a free slot instead of failing fast. The slot cap (`MAX_CONCURRENT_IMAGE_JOBS=4`)
+is unchanged — CPU protection stays in place. Trade-off: p99 at c=8 rises from 1124 ms to 2100 ms
+because jobs wait in queue rather than failing instantly; zero requests are dropped.
+
+The env variable remains tunable: set a lower value (e.g. `1.0`) for real-time UX contexts where
+fast-fail is preferable to queuing behind a slow job.
+
 - SQLite remains available for local development only; production must use managed MySQL/PostgreSQL.
 - For SQLite local runs, WAL mode and busy-timeout are enabled automatically to improve concurrent read/write behavior.
 - For production, run multiple API replicas and place them behind a load balancer.
