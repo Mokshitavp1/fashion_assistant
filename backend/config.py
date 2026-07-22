@@ -74,3 +74,5 @@ INFERENCE_QUEUE_ENABLED: bool = os.getenv(
     "INFERENCE_QUEUE_ENABLED",
     "false" if IS_DEV_ENV else "true",
 ).strip().lower() in {"1", "true", "yes", "on"}
+USE_CELERY: bool = os.getenv("USE_CELERY", "true").strip().lower() in {"1", "true", "yes", "on"}
+

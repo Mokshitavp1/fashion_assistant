@@ -25,7 +25,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy import String, Text, Boolean, inspect, text
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import FastAPI, File, Form, UploadFile, Depends, HTTPException, Request
+from fastapi import FastAPI, File, Form, UploadFile, Depends, HTTPException, Request, BackgroundTasks
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, field_validator
@@ -65,6 +65,9 @@ from services.task_queue import (
     fetch_job,
     get_job_owner,
     get_job_type,
+    USE_CELERY,
+    IN_MEMORY_JOBS,
+    enqueue_background_inference,
 )
 from services.observability import log_event, setup_structured_logging
 from utils import utcnow
@@ -1489,31 +1492,47 @@ async def get_inference_job(
     current_user_id: int = Depends(verify_token),
 ):
     """Get status/result for a queued inference job owned by the current user."""
-    try:
-        job = fetch_job(job_id)
-    except Exception:
-        raise HTTPException(status_code=404, detail="Job not found")
+    if USE_CELERY:
+        try:
+            job = fetch_job(job_id)
+        except Exception:
+            raise HTTPException(status_code=404, detail="Job not found")
 
-    owner_user_id = get_job_owner(job_id)
+        owner_user_id = get_job_owner(job_id)
+        job_type = get_job_type(job_id)
+        status = str(job.status or "PENDING").lower()
+        is_finished = bool(job.ready() and job.successful())
+        is_failed = bool(job.failed())
+        job_result = job.result
+    else:
+        if job_id not in IN_MEMORY_JOBS:
+            raise HTTPException(status_code=404, detail="Job not found")
+        job_info = IN_MEMORY_JOBS[job_id]
+        owner_user_id = job_info.get("user_id")
+        job_type = job_info.get("job_type")
+        status = str(job_info.get("status") or "PENDING").lower()
+        is_finished = status == "success"
+        is_failed = status == "failure"
+        job_result = job_info.get("result") if is_finished else job_info.get("error")
 
     if owner_user_id is not None and owner_user_id != current_user_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    status = str(job.status or "PENDING").lower()
     payload = {
-        "job_id": job.id,
-        "job_type": get_job_type(job_id),
+        "job_id": job_id,
+        "job_type": job_type,
         "status": status,
-        "is_finished": bool(job.ready() and job.successful()),
-        "is_failed": bool(job.failed()),
+        "is_finished": is_finished,
+        "is_failed": is_failed,
     }
 
-    if job.ready() and job.successful():
-        payload["result"] = to_json_compatible(job.result)
-    elif job.failed():
-        payload["error"] = str(job.result or "Job failed")[:1000]
+    if is_finished:
+        payload["result"] = to_json_compatible(job_result)
+    elif is_failed:
+        payload["error"] = str(job_result or "Job failed")[:1000]
 
     return payload
+
 
 
 @app.post("/users/{user_id}/analyze")
@@ -1521,6 +1540,7 @@ async def get_inference_job(
 async def analyze_user(
     request: Request,
     user_id: int,
+    background_tasks: BackgroundTasks,
     image: UploadFile = File(...),
     height: float = Form(...),
     weight: float = Form(...),
@@ -1542,17 +1562,31 @@ async def analyze_user(
     if INFERENCE_QUEUE_ENABLED:
         try:
             image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-            job = enqueue_inference_job(
-                "worker_tasks.process_analyze_job",
-                kwargs={
-                    "user_id": user_id,
-                    "height": float(user_data.height),
-                    "weight": float(user_data.weight),
-                    "image_b64": image_b64,
-                },
-                user_id=user_id,
-                job_type="analyze",
-            )
+            if USE_CELERY:
+                job = enqueue_inference_job(
+                    "worker_tasks.process_analyze_job",
+                    kwargs={
+                        "user_id": user_id,
+                        "height": float(user_data.height),
+                        "weight": float(user_data.weight),
+                        "image_b64": image_b64,
+                    },
+                    user_id=user_id,
+                    job_type="analyze",
+                )
+            else:
+                job = enqueue_background_inference(
+                    background_tasks,
+                    "worker_tasks.process_analyze_job",
+                    kwargs={
+                        "user_id": user_id,
+                        "height": float(user_data.height),
+                        "weight": float(user_data.weight),
+                        "image_b64": image_b64,
+                    },
+                    user_id=user_id,
+                    job_type="analyze",
+                )
         except Exception as exc:
             logger.error("Failed to enqueue analyze job: %s", exc)
             raise HTTPException(status_code=503, detail="Inference queue unavailable")
@@ -1666,6 +1700,7 @@ async def get_user(
 async def add_wardrobe_item(
     request: Request,
     user_id: int,
+    background_tasks: BackgroundTasks,
     image: UploadFile = File(...),
     category: str = Form(...),
     season: str = Form(None),
@@ -1706,17 +1741,31 @@ async def add_wardrobe_item(
         if INFERENCE_QUEUE_ENABLED:
             try:
                 image_b64 = base64.b64encode(image_bytes).decode("utf-8")
-                job = enqueue_inference_job(
-                    "worker_tasks.process_wardrobe_add_job",
-                    kwargs={
-                        "user_id": user_id,
-                        "category": item_data.category,
-                        "season": item_data.season or "all",
-                        "image_b64": image_b64,
-                    },
-                    user_id=user_id,
-                    job_type="wardrobe_add",
-                )
+                if USE_CELERY:
+                    job = enqueue_inference_job(
+                        "worker_tasks.process_wardrobe_add_job",
+                        kwargs={
+                            "user_id": user_id,
+                            "category": item_data.category,
+                            "season": item_data.season or "all",
+                            "image_b64": image_b64,
+                        },
+                        user_id=user_id,
+                        job_type="wardrobe_add",
+                    )
+                else:
+                    job = enqueue_background_inference(
+                        background_tasks,
+                        "worker_tasks.process_wardrobe_add_job",
+                        kwargs={
+                            "user_id": user_id,
+                            "category": item_data.category,
+                            "season": item_data.season or "all",
+                            "image_b64": image_b64,
+                        },
+                        user_id=user_id,
+                        job_type="wardrobe_add",
+                    )
             except Exception as exc:
                 logger.error("Failed to enqueue wardrobe job: %s", exc)
                 raise HTTPException(

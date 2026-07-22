@@ -171,16 +171,22 @@ From workspace root:
 - Run backend: `npm run backend:dev`
 - Run backend tests: `./scripts/run_tests.sh` or `powershell -File .\scripts\run_tests.ps1`
 
-## Worker Queue (Horizontal ML Scalability)
+## Execution Modes: Celery vs. Lightweight (Demo) Mode
 
-Run API and workers separately so API instances stay stateless:
+The backend supports two modes of execution for ML/inference tasks, controlled by the `USE_CELERY` environment variable:
 
-1. Start Redis:
-  - Example Docker: `docker run -p 6379:6379 redis:7`
-2. Start API:
-  - `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000`
-3. Start one or more workers:
-  - `cd backend && celery -A services.task_queue.celery_app worker -Q inference --loglevel=info`
+1. **Celery Mode (`USE_CELERY=true`, default)**
+   Run API and workers separately so API instances stay stateless:
+   - Start Redis: `docker run -p 6379:6379 redis:7`
+   - Start API: `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000`
+   - Start worker: `cd backend && celery -A worker_tasks worker --loglevel=info`
+
+2. **Lightweight (Demo) Mode (`USE_CELERY=false`)**
+   Ideal for free-tier deployments (e.g., Render, Fly.io) to run YOLOv8 and ML inference without needing a persistent worker process or Redis database.
+   - Start API: `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000`
+   - No external worker or Redis is required. Tasks run asynchronously within the FastAPI process via `BackgroundTasks`. Job statuses and results are tracked in a module-level in-memory dictionary.
+   - **Important Constraint**: To prevent missing job status lookups across separate processes, the API process must be run with a single Uvicorn worker (e.g., `--workers 1` or default).
+
 
 Behavior when queue is enabled:
 

@@ -1,15 +1,21 @@
 import os
+import uuid
+import time
 from typing import Any, Dict, Optional
 
 from celery import Celery
 from celery.result import AsyncResult
 from celery.schedules import crontab
 from redis import Redis
+from fastapi import BackgroundTasks
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 INFERENCE_QUEUE_NAME = os.getenv("INFERENCE_QUEUE_NAME", "inference")
 INFERENCE_JOB_TIMEOUT = int(os.getenv("INFERENCE_JOB_TIMEOUT", "300"))
 INFERENCE_RESULT_TTL = int(os.getenv("INFERENCE_RESULT_TTL", "3600"))
+
+USE_CELERY = os.getenv("USE_CELERY", "true").strip().lower() in {"1", "true", "yes", "on"}
+
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", REDIS_URL)
@@ -88,3 +94,49 @@ def get_job_type(job_id: str) -> Optional[str]:
         return raw.decode("utf-8")
     except Exception:
         return None
+
+
+# Module-level singleton dictionary for tracking jobs in-memory
+IN_MEMORY_JOBS: Dict[str, Dict[str, Any]] = {}
+
+
+def run_in_memory_job(job_id: str, task_name: str, kwargs: Dict[str, Any]):
+    from worker_tasks import execute_inference
+    IN_MEMORY_JOBS[job_id]["status"] = "STARTED"
+    try:
+        result = execute_inference(task_name, kwargs)
+        IN_MEMORY_JOBS[job_id]["status"] = "SUCCESS"
+        IN_MEMORY_JOBS[job_id]["result"] = result
+    except Exception as exc:
+        IN_MEMORY_JOBS[job_id]["status"] = "FAILURE"
+        IN_MEMORY_JOBS[job_id]["error"] = str(exc)
+
+
+def enqueue_background_inference(
+    background_tasks: BackgroundTasks,
+    task_name: str,
+    kwargs: Dict[str, Any],
+    user_id: int,
+    job_type: str,
+) -> str:
+    # Self-cleaning eviction strategy to prevent unbounded memory growth
+    now = time.time()
+    stale_keys = [
+        jid for jid, job in IN_MEMORY_JOBS.items()
+        if now - job.get("created_at", 0) > INFERENCE_RESULT_TTL
+    ]
+    for jid in stale_keys:
+        IN_MEMORY_JOBS.pop(jid, None)
+
+    job_id = str(uuid.uuid4())
+    IN_MEMORY_JOBS[job_id] = {
+        "status": "PENDING",
+        "user_id": user_id,
+        "job_type": job_type,
+        "result": None,
+        "error": None,
+        "created_at": now,
+    }
+    background_tasks.add_task(run_in_memory_job, job_id, task_name, kwargs)
+    return job_id
+

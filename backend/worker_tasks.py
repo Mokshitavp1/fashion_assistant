@@ -40,8 +40,7 @@ def _decode_image_payload(image_b64: str) -> bytes:
         raise ValueError("Invalid image payload") from exc
 
 
-@celery_app.task(name="worker_tasks.process_analyze_job")
-def process_analyze_job(
+def execute_analyze_inference(
     user_id: int,
     height: float,
     weight: float,
@@ -108,8 +107,7 @@ def process_analyze_job(
         db.close()
 
 
-@celery_app.task(name="worker_tasks.process_wardrobe_add_job")
-def process_wardrobe_add_job(
+def execute_wardrobe_add_inference(
     user_id: int,
     category: str,
     season: str,
@@ -201,6 +199,62 @@ def process_wardrobe_add_job(
         raise
     finally:
         db.close()
+
+
+def execute_inference(task_name: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """Unified entry point for YOLOv8 and ML inference jobs."""
+    if task_name == "worker_tasks.process_analyze_job":
+        return execute_analyze_inference(
+            user_id=kwargs["user_id"],
+            height=kwargs["height"],
+            weight=kwargs["weight"],
+            image_b64=kwargs["image_b64"],
+        )
+    elif task_name == "worker_tasks.process_wardrobe_add_job":
+        return execute_wardrobe_add_inference(
+            user_id=kwargs["user_id"],
+            category=kwargs["category"],
+            season=kwargs["season"],
+            image_b64=kwargs["image_b64"],
+        )
+    else:
+        raise ValueError(f"Unknown task name for inference: {task_name}")
+
+
+@celery_app.task(name="worker_tasks.process_analyze_job")
+def process_analyze_job(
+    user_id: int,
+    height: float,
+    weight: float,
+    image_b64: str,
+) -> Dict[str, Any]:
+    return execute_inference(
+        "worker_tasks.process_analyze_job",
+        {
+            "user_id": user_id,
+            "height": height,
+            "weight": weight,
+            "image_b64": image_b64,
+        },
+    )
+
+
+@celery_app.task(name="worker_tasks.process_wardrobe_add_job")
+def process_wardrobe_add_job(
+    user_id: int,
+    category: str,
+    season: str,
+    image_b64: str,
+) -> Dict[str, Any]:
+    return execute_inference(
+        "worker_tasks.process_wardrobe_add_job",
+        {
+            "user_id": user_id,
+            "category": category,
+            "season": season,
+            "image_b64": image_b64,
+        },
+    )
 
 
 # ============ LEARNING SYSTEM TASKS ============

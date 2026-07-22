@@ -133,7 +133,7 @@ services:
     repo: YOUR_GITHUB/fashion_app
     branch: main
   build_command: pip install -r requirements.txt
-  run_command: uvicorn backend.main:app --host 0.0.0.0 --port 8080
+  run_command: uvicorn backend.main:app --host 0.0.0.0 --port 8080 --workers 1  # Keep --workers 1 when USE_CELERY=false; job status is tracked in-memory and is not shared across processes
   http_port: 8080
   envs:
   - key: ENV

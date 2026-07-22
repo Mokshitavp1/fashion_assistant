@@ -80,7 +80,11 @@ This repo has three intentionally different kinds of work so the roadmap stays r
 - **Supporting platform:** feedback collection, metrics, and model retraining are enabled, but they are gated by data volume and infrastructure rather than treated as separate user-facing products.
 - **Archived reference:** `legacy-mobile/` is preserved for historical context only and is not part of current delivery.
 
-Operationally, Redis/Celery and the learning pipeline are optional deployment capabilities for smaller hosts, not a sign that the product is unstable or half-finished.
+Operationally, the backend supports two modes controlled by the `USE_CELERY` environment variable:
+- **Full Setup (`USE_CELERY=true`, default)**: Celery + Redis + Redis-backed job status/result storage. Used for local development and scalable production environments.
+- **Demo Mode (`USE_CELERY=false`)**: Uses FastAPI's `BackgroundTasks` instead of Celery's worker pool, and tracks job status/results using an in-memory dictionary. Ideal for free-tier deployments (e.g., Render, Fly.io) to run the YOLOv8 and ML inference without needing a persistent worker process.
+  *Note: In Lightweight/Demo Mode, because job status is tracked in-memory, Uvicorn must be run with a single worker process (`--workers 1` or default) to prevent job lookup misses across multiple processes.*
+
 
 ## Quick Start
 
